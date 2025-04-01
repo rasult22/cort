@@ -1,9 +1,9 @@
-import Game from './components/Game'
+import { GameContainer } from './components/Game/GameContainer'
 
 function App() {
   return (
-    <div className="w-screen h-screen bg-gray-900 flex items-center justify-center">
-      <Game />
+    <div className="w-screen h-screen bg-gray-900">
+      <GameContainer />
     </div>
   )
 }

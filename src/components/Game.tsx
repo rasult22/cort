@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import Phaser from 'phaser';
+import { GameEngine } from '../game/core/Game';
 
 class MainScene extends Phaser.Scene {
   constructor() {
@@ -8,6 +9,18 @@ class MainScene extends Phaser.Scene {
 
   preload() {
     // Load game assets here
+    // Load all playing cards
+    const suits = ['Hearts', 'Pikes', 'Clovers', 'Tiles'];
+    const values = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'Jack', 'Queen', 'King'];
+    
+    this.load.image('test', 'assets/playing_cards/PNG/white/Hearts_A_white.png')
+    // suits.forEach(suit => {
+    //   values.forEach(value => {
+    //     const key = `${suit}_${value}_white`;
+    //     this.load.image(key, `assets/playing_cards/PNG/white/${suit}_${value}_white.png`);
+    //   });
+    // });
+    
   }
 
   create() {
@@ -20,6 +33,9 @@ class MainScene extends Phaser.Scene {
         fontSize: '32px'
       }
     ).setOrigin(0.5);
+    this.add.image(this.cameras.main.centerX, this.cameras.main.centerY, 'test').setScale(0.1);
+    this.add.image(this.cameras.main.centerX + 50, this.cameras.main.centerY, 'test').setScale(0.1);
+    this.add.image(this.cameras.main.centerX - 50, this.cameras.main.centerY, 'test').setScale(0.1);
   }
 
   update() {
@@ -29,6 +45,8 @@ class MainScene extends Phaser.Scene {
 
 const Game = () => {
   useEffect(() => {
+    // Initialize the game instance globally
+    window.game = new GameEngine(); 
     const config: Phaser.Types.Core.GameConfig = {
       type: Phaser.AUTO,
       scale: {
