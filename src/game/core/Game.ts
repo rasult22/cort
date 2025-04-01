@@ -185,26 +185,27 @@ export class GameEngine {
 
         const leadSuit = this.currentTrick.leadSuit;
         let winningCard = this.currentTrick.cards[0];
-        let winningIndex = 0;
+        let winningCardIndex = 0;
 
         for (let i = 1; i < 4; i++) {
             const card = this.currentTrick.cards[i];
             if (card.suit === this.trumpSuit && winningCard.suit !== this.trumpSuit) {
                 winningCard = card;
-                winningIndex = i;
+                winningCardIndex = i;
             } else if (card.suit === winningCard.suit) {
                 if (this.getCardValue(card) > this.getCardValue(winningCard)) {
                     winningCard = card;
-                    winningIndex = i;
+                    winningCardIndex = i;
                 }
             }
         }
 
-        this.currentTrick.winner = winningIndex;
-        this.players[winningIndex].tricks++;
-        this.currentPlayerIndex = winningIndex;
+        const winningPlayerId = this.currentTrick.playerIds[winningCardIndex];
+        this.currentTrick.winner = winningPlayerId;
+        this.players[winningPlayerId].tricks++;
+        this.currentPlayerIndex = winningPlayerId;
 
-        console.log(`Trick won by player ${winningIndex}`);
+        console.log(`Trick won by player ${winningPlayerId}`);
         this.checkGameEnd();
     }
 
