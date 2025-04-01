@@ -58,12 +58,12 @@ export const GameTable: React.FC<GameTableProps> = ({ game, onPlayCard, onSetTru
                 <div className="col-span-2 text-center font-bold mb-2">Current Trick</div>
                 {currentTrick.cards.map((card, index) => (
                     <div key={index} className="text-center">
-                        Player {index}: {renderCard(card)}
+                        {game.getPlayerName(currentTrick.playerIds[index])} ({currentTrick.playerIds[index]}): {renderCard(card)}
                     </div>
                 ))}
                 {currentTrick.winner !== -1 && (
                     <div className="col-span-2 text-center text-green-600 font-bold">
-                        Winner: Player {currentTrick.winner}
+                        Winner: {game.getPlayerName(currentTrick.winner)} ({currentTrick.winner})
                     </div>
                 )}
             </div>
@@ -95,7 +95,7 @@ export const GameTable: React.FC<GameTableProps> = ({ game, onPlayCard, onSetTru
         const tricks = game.getPlayerTricks(playerId);
         return (
             <div className="text-center">
-                <div className="font-bold">Player {playerId}</div>
+                <div className="font-bold">{game.getPlayerName(playerId)} (Player {playerId})</div>
                 <div>Tricks: {tricks}</div>
                 <div className="text-sm text-gray-500">
                     {playerId === currentPlayer ? '(Current Turn)' : ''}
@@ -119,7 +119,7 @@ export const GameTable: React.FC<GameTableProps> = ({ game, onPlayCard, onSetTru
                 <div>
                     {[0, 1, 2, 3].map((playerId) => (
                         <div key={playerId}>
-                            <div className="font-bold mb-2">Player {playerId}</div>
+                            <div className="font-bold mb-2">{game.getPlayerName(playerId)} (Player {playerId})</div>
                             {renderPlayerHand(playerId)}
                         </div>
                     ))}

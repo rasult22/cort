@@ -9,6 +9,7 @@ interface Card {
 
 interface Player {
     id: number;
+    name: string;
     hand: Card[];
     tricks: number;
 }
@@ -17,6 +18,7 @@ interface Trick {
     cards: Card[];
     winner: number;
     leadSuit: Suit;
+    playerIds: number[]; // Track which player played each card
 }
 
 /**
@@ -45,10 +47,10 @@ export class GameEngine {
     constructor() {
         this.deck = this.createDeck();
         this.players = [
-            { id: 0, hand: [], tricks: 0 },
-            { id: 1, hand: [], tricks: 0 },
-            { id: 2, hand: [], tricks: 0 },
-            { id: 3, hand: [], tricks: 0 }
+            { id: 0, name: 'North', hand: [], tricks: 0 },
+            { id: 1, name: 'East', hand: [], tricks: 0 },
+            { id: 2, name: 'South', hand: [], tricks: 0 },
+            { id: 3, name: 'West', hand: [], tricks: 0 }
         ];
         this.currentTrick = null;
         this.trumpSuit = null;
@@ -150,7 +152,8 @@ export class GameEngine {
             this.currentTrick = {
                 cards: [],
                 winner: -1,
-                leadSuit: card.suit
+                leadSuit: card.suit,
+                playerIds: []
             };
         } else {
             // Check if following suit is required
@@ -162,6 +165,7 @@ export class GameEngine {
 
         // Play the card
         this.currentTrick.cards.push(card);
+        this.currentTrick.playerIds.push(playerId);
         player.hand.splice(cardIndex, 1);
 
         // If trick is complete, determine winner
@@ -265,6 +269,15 @@ export class GameEngine {
      */
     public getPlayerTricks(playerId: number): number {
         return this.players[playerId].tricks;
+    }
+
+    /**
+     * Gets the name of a player
+     * @param playerId The ID of the player (0-3)
+     * @returns Name of the player
+     */
+    public getPlayerName(playerId: number): string {
+        return this.players[playerId].name;
     }
 }
 
