@@ -1,20 +1,20 @@
 // Types
-type Suit = 'hearts' | 'diamonds' | 'clubs' | 'spades';
-type Rank = '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' | '10' | 'J' | 'Q' | 'K' | 'A';
+export type Suit = 'hearts' | 'diamonds' | 'clubs' | 'spades';
+export type Rank = '2' | '3' | '4' | '5' | '6' | '7' | '8' | '9' | '10' | 'J' | 'Q' | 'K' | 'A';
 
-interface Card {
+export interface Card {
     suit: Suit;
     rank: Rank;
 }
 
-interface Player {
+export interface Player {
     id: number;
     name: string;
     hand: Card[];
     tricks: number;
 }
 
-interface Trick {
+export interface Trick {
     cards: Card[];
     winner: number;
     leadSuit: Suit;
