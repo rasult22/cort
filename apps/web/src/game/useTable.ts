@@ -8,7 +8,7 @@ import { positionOf } from './layout';
 /** How long a finished trick stays on the table before it is swept away. */
 const TRICK_HOLD_MS = 1150;
 const TRUMP_NOTICE_MS = 1700;
-const EMOTE_MS = 2600;
+const EMOTE_MS = 3400;
 const ERROR_MS = 2200;
 /** The rest of the deal lands a moment after trump is named. */
 const REST_OF_DEAL_MS = 450;

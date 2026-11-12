@@ -3,7 +3,7 @@ import type { SeatInfo } from '@cort/protocol';
 import { AnimatePresence, motion } from 'motion/react';
 import { CardBack, SuitIcon, isRed } from './Card';
 import type { Position } from './layout';
-import { Reaction, isSticker } from './Sticker';
+import { Reaction, isLarge } from './Sticker';
 import type { Emote } from './useTable';
 
 interface PlayerPlateProps {
@@ -43,7 +43,7 @@ export function PlayerPlate({ info, position, cards, active, isCaller, trump, pa
                     {emote && (
                         <motion.div
                             key={emote.id}
-                            className={`emote-bubble ${isSticker(emote.emote) ? 'sticker-bubble' : ''}`}
+                            className={`emote-bubble ${isLarge(emote.emote) ? 'sticker-bubble' : ''}`}
                             initial={{ scale: 0.3, opacity: 0, y: 8 }}
                             animate={{ scale: 1, opacity: 1, y: 0 }}
                             exit={{ scale: 0.6, opacity: 0 }}

@@ -1,4 +1,4 @@
-import { STICKERS, type StickerId } from '@cort/protocol';
+import { STICKERS, memeIndex, type StickerId } from '@cort/protocol';
 import type { ReactNode } from 'react';
 
 /**
@@ -224,7 +224,19 @@ export function Sticker({ id }: { id: StickerId }) {
     );
 }
 
-/** Shows whatever a player sent: a sticker from the pack, or a plain emoji. */
+export const memeUrl = (index: number): string => `${import.meta.env.BASE_URL}stickers/memes/${index}.webp`;
+
+/** An animated meme sticker from the meme pack. */
+export function Meme({ index }: { index: number }) {
+    return <img className="meme" src={memeUrl(index)} alt="" loading="lazy" draggable={false} />;
+}
+
+/** Stickers and memes are shown large; emoji stay small in a white disc. */
+export const isLarge = (value: string): boolean => isSticker(value) || memeIndex(value) !== null;
+
+/** Shows whatever a player sent: a meme, a sticker from the pack, or a plain emoji. */
 export function Reaction({ value }: { value: string }) {
+    const meme = memeIndex(value);
+    if (meme !== null) return <Meme index={meme} />;
     return isSticker(value) ? <Sticker id={value} /> : <>{value}</>;
 }

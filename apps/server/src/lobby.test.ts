@@ -310,9 +310,13 @@ describe('online tables', () => {
         expect(host.last('emote')).toEqual({ type: 'emote', seat: guest.seat, emote: '🔥' });
         guest.say({ type: 'emote', emote: 'trump' });
         expect(host.last('emote')).toEqual({ type: 'emote', seat: guest.seat, emote: 'trump' });
+        guest.say({ type: 'emote', emote: 'meme:49' });
+        expect(host.last('emote')).toEqual({ type: 'emote', seat: guest.seat, emote: 'meme:49' });
 
         const before = host.messages.length;
         guest.say({ type: 'emote', emote: '<script>' });
+        guest.say({ type: 'emote', emote: 'meme:50' });
+        guest.say({ type: 'emote', emote: 'meme:../../secret' });
         expect(host.messages.length).toBe(before);
     });
 });

@@ -35,9 +35,21 @@ export const EMOTES = ['👍', '👏', '🤝', '🙏', '😂', '😎', '🤔', '
 export const STICKERS = ['nice', 'wow', 'lol', 'hmm', 'sad', 'angry', 'hurry', 'trump', 'thanks'] as const;
 export type StickerId = (typeof STICKERS)[number];
 
-/** Everything a player may send as a reaction: a sticker id or an emoji. */
+/** The meme pack: animated stickers stored with the client as files 0 … MEME_COUNT - 1. */
+export const MEME_COUNT = 50;
+export const memeId = (index: number): string => `meme:${index}`;
+/** The index of a meme reaction, or null if the value is not one. */
+export function memeIndex(value: string): number | null {
+    const match = /^meme:(\d{1,3})$/.exec(value);
+    if (!match) return null;
+    const index = Number(match[1]);
+    return index < MEME_COUNT ? index : null;
+}
+
+/** Everything a player may send as a reaction: a meme, a sticker id or an emoji. */
 export const isReaction = (value: unknown): value is string =>
-    typeof value === 'string' && ((STICKERS as readonly string[]).includes(value) || (EMOTES as readonly string[]).includes(value));
+    typeof value === 'string' &&
+    (memeIndex(value) !== null || (STICKERS as readonly string[]).includes(value) || (EMOTES as readonly string[]).includes(value));
 
 /** Client → server. The server always decides the seat; it never trusts one from the client. */
 export type ClientMessage =

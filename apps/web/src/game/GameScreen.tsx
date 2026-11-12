@@ -1,5 +1,5 @@
 import { cardId, legalCards, SUITS, type Card, type Seat, type Team } from '@cort/engine';
-import { EMOTES, STICKERS } from '@cort/protocol';
+import { EMOTES, MEME_COUNT, STICKERS, memeId } from '@cort/protocol';
 import { AnimatePresence, motion } from 'motion/react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Session } from '../session/session';
@@ -9,7 +9,7 @@ import { Hand } from './Hand';
 import { Lobby } from './Lobby';
 import { Ornament } from './Ornament';
 import { PlayerPlate } from './PlayerPlate';
-import { Reaction, Sticker, isSticker, stickerCaption } from './Sticker';
+import { Meme, Reaction, Sticker, isLarge, stickerCaption } from './Sticker';
 import { TrickArea, type CardOrigin } from './TrickArea';
 import { positionOf, useLayout } from './layout';
 import { useTable } from './useTable';
@@ -23,7 +23,7 @@ export function GameScreen({ session, onExit }: { session: Session; onExit: (mes
     const [myOrigin, setMyOrigin] = useState<CardOrigin | null>(null);
     const [muted, setMutedState] = useState(isMuted);
     const [emotesOpen, setEmotesOpen] = useState(false);
-    const [emoteTab, setEmoteTab] = useState<'stickers' | 'emoji'>('stickers');
+    const [emoteTab, setEmoteTab] = useState<'memes' | 'stickers' | 'emoji'>('memes');
     const { room, view, seat } = table;
     const exit = () => onExit();
 
@@ -207,7 +207,7 @@ export function GameScreen({ session, onExit }: { session: Session; onExit: (mes
                     {table.emotes[seat] && (
                         <motion.div
                             key={table.emotes[seat]!.id}
-                            className={`emote-bubble mine ${isSticker(table.emotes[seat]!.emote) ? 'sticker-bubble' : ''}`}
+                            className={`emote-bubble mine ${isLarge(table.emotes[seat]!.emote) ? 'sticker-bubble' : ''}`}
                             initial={{ scale: 0.3, opacity: 0 }}
                             animate={{ scale: 1, opacity: 1 }}
                             exit={{ scale: 0.6, opacity: 0 }}
@@ -228,6 +228,9 @@ export function GameScreen({ session, onExit }: { session: Session; onExit: (mes
                 {emotesOpen && (
                     <div className="emotes-panel">
                         <div className="emotes-tabs">
+                            <button type="button" className={emoteTab === 'memes' ? 'on' : ''} onClick={() => setEmoteTab('memes')}>
+                                Мемы
+                            </button>
                             <button type="button" className={emoteTab === 'stickers' ? 'on' : ''} onClick={() => setEmoteTab('stickers')}>
                                 Стикеры
                             </button>
@@ -235,7 +238,15 @@ export function GameScreen({ session, onExit }: { session: Session; onExit: (mes
                                 Эмодзи
                             </button>
                         </div>
-                        {emoteTab === 'stickers' ? (
+                        {emoteTab === 'memes' ? (
+                            <div className="emotes-grid memes">
+                                {Array.from({ length: MEME_COUNT }, (_, index) => (
+                                    <button key={index} type="button" aria-label={`Мем ${index + 1}`} onClick={() => sendReaction(memeId(index))}>
+                                        <Meme index={index} />
+                                    </button>
+                                ))}
+                            </div>
+                        ) : emoteTab === 'stickers' ? (
                             <div className="emotes-grid stickers">
                                 {STICKERS.map((id) => (
                                     <button key={id} type="button" aria-label={stickerCaption(id)} onClick={() => sendReaction(id)}>
