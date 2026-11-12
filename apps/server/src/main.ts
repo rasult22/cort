@@ -21,6 +21,8 @@ const MIME: Record<string, string> = {
     '.json': 'application/json',
     '.png': 'image/png',
     '.ico': 'image/x-icon',
+    '.wav': 'audio/wav',
+    '.txt': 'text/plain; charset=utf-8',
 };
 
 const lobby = new Lobby();

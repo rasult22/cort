@@ -14,5 +14,9 @@
     "playwright-core": "^1.65.0",
     "typescript": "~5.7.2",
     "vitest": "^3.2.0"
+  },
+  "packageManager": "pnpm@12.11.2",
+  "engines": {
+    "node": ">=20"
   }
 }

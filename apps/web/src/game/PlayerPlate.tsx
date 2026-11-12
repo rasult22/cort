@@ -15,13 +15,12 @@ interface PlayerPlateProps {
     trump: Suit | null;
     partner: boolean;
     emote?: Emote;
-    showFan: boolean;
 }
 
 const MAX_FAN = 13;
 
 /** An opponent or partner: avatar, name, and their face-down cards. */
-export function PlayerPlate({ info, position, cards, active, isCaller, trump, partner, emote, showFan }: PlayerPlateProps) {
+export function PlayerPlate({ info, position, cards, active, isCaller, trump, partner, emote }: PlayerPlateProps) {
     return (
         <div className={`plate plate-${position} ${active ? 'active' : ''} ${info.connected ? '' : 'offline'}`}>
             <div className="plate-avatar">
@@ -31,7 +30,6 @@ export function PlayerPlate({ info, position, cards, active, isCaller, trump, pa
                         {trump ? <SuitIcon suit={trump} /> : '♛'}
                     </div>
                 )}
-                {!showFan && cards > 0 && <div className="plate-count">{cards}</div>}
                 <AnimatePresence>
                     {emote && (
                         <motion.div
@@ -52,15 +50,13 @@ export function PlayerPlate({ info, position, cards, active, isCaller, trump, pa
                 {partner && <span className="plate-tag">напарник</span>}
                 {info.kind === 'bot' && <span className="plate-tag">бот</span>}
             </div>
-            {showFan && (
-                <div className="plate-fan" style={{ ['--n' as string]: Math.min(cards, MAX_FAN) }}>
-                    {Array.from({ length: Math.min(cards, MAX_FAN) }, (_, i) => (
-                        <div key={i} className="plate-fan-card" style={{ ['--i' as string]: i }}>
-                            <CardBack />
-                        </div>
-                    ))}
-                </div>
-            )}
+            <div className="plate-fan" style={{ ['--n' as string]: Math.min(cards, MAX_FAN) }}>
+                {Array.from({ length: Math.min(cards, MAX_FAN) }, (_, i) => (
+                    <div key={i} className="plate-fan-card" style={{ ['--i' as string]: i }}>
+                        <CardBack />
+                    </div>
+                ))}
+            </div>
         </div>
     );
 }

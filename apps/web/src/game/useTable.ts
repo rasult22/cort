@@ -2,13 +2,22 @@ import type { CompletedTrick, GameEvent, Play, PlayerView, Seat, Suit, Team } fr
 import type { RoomInfo } from '@cort/protocol';
 import { useEffect, useState } from 'react';
 import type { Session } from '../session/session';
-import { play as playSound } from '../sound';
+import { haptic, play as playSound, playDeal } from '../sound';
+import { positionOf } from './layout';
 
 /** How long a finished trick stays on the table before it is swept away. */
 const TRICK_HOLD_MS = 1150;
 const TRUMP_NOTICE_MS = 1700;
 const EMOTE_MS = 2600;
 const ERROR_MS = 2200;
+/** The rest of the deal lands a moment after trump is named. */
+const REST_OF_DEAL_MS = 450;
+
+/** Sounds come from where the player sits: left, right or centre. */
+function panOf(seat: Seat, mySeat: Seat): number {
+    const position = positionOf(seat, mySeat);
+    return position === 'left' ? -0.55 : position === 'right' ? 0.55 : 0;
+}
 
 export interface Emote {
     id: number;
@@ -63,15 +72,17 @@ export function useTable(session: Session): TableState {
                     case 'handDealt':
                         clearTimeout(timers.get('hold'));
                         setHeld(null);
-                        playSound('deal');
+                        playDeal(next.hand.length);
                         break;
                     case 'trumpChosen':
                         setTrumpNotice({ seat: event.seat, suit: event.suit });
                         after('trump', TRUMP_NOTICE_MS, () => setTrumpNotice(null));
                         playSound('trump');
+                        after('deal', REST_OF_DEAL_MS, () => playDeal(next.hand.length - 5));
                         break;
                     case 'cardPlayed':
-                        playSound('card');
+                        playSound('card', { pan: panOf(event.seat, mySeat), mine: event.seat === mySeat });
+                        if (event.seat === mySeat) haptic();
                         // A card of the next trick: stop showing the previous one.
                         if (!trickWon) {
                             clearTimeout(timers.get('hold'));
@@ -83,21 +94,22 @@ export function useTable(session: Session): TableState {
                         setCollectTo(event.seat);
                         after('hold', TRICK_HOLD_MS, () => {
                             setHeld(null);
-                            playSound('trick');
+                            playSound('trick', { pan: panOf(event.seat, mySeat), mine: wonBy(event.team, mySeat) });
                         });
                         break;
                     case 'handWon':
                         if (next.phase === 'handOver') {
-                            after('result', TRICK_HOLD_MS, () => playSound(wonBy(event.team, mySeat) ? 'win' : 'lose'));
+                            after('result', TRICK_HOLD_MS + 250, () => playSound(wonBy(event.team, mySeat) ? 'handWin' : 'handLose'));
                         }
                         break;
                     case 'matchWon':
-                        after('result', TRICK_HOLD_MS, () => playSound(wonBy(event.team, mySeat) ? 'win' : 'lose'));
+                        after('result', TRICK_HOLD_MS + 250, () => playSound(wonBy(event.team, mySeat) ? 'matchWin' : 'matchLose'));
                         break;
                 }
             }
             if (next.phase === 'playing' && next.turn === mySeat && events.length > 0 && !trickWon) {
                 playSound('turn');
+                haptic(8);
             }
         };
 

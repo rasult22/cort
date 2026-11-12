@@ -3,7 +3,7 @@ import { EMOTES } from '@cort/protocol';
 import { AnimatePresence, motion } from 'motion/react';
 import { useMemo, useRef, useState } from 'react';
 import type { Session } from '../session/session';
-import { isMuted, setMuted, unlockAudio } from '../sound';
+import { isMuted, play, setMuted, unlockAudio } from '../sound';
 import { SUIT_NAMES, SuitIcon, isRed } from './Card';
 import { Hand } from './Hand';
 import { Lobby } from './Lobby';
@@ -137,7 +137,6 @@ export function GameScreen({ session, onExit }: { session: Session; onExit: () =
                         trump={view.trump}
                         partner={offset === 2}
                         emote={table.emotes[s]}
-                        showFan={!layout.compact || offset === 2}
                     />
                 );
             })}
@@ -164,6 +163,7 @@ export function GameScreen({ session, onExit }: { session: Session; onExit: () =
                                     className={`trump-option ${isRed(suit) ? 'red' : 'black'}`}
                                     onClick={() => {
                                         unlockAudio();
+                                        play('tap');
                                         session.chooseTrump(suit);
                                     }}
                                 >
