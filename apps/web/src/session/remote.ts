@@ -16,8 +16,8 @@ export interface RemoteOptions {
 }
 
 const CLOSED_MESSAGES = {
-    roomNotFound: 'Этот стол уже закрыт. Создайте новый и отправьте друзьям свежую ссылку.',
-    roomFull: 'За этим столом уже нет свободных мест.',
+    roomNotFound: 'Эта комната уже закрыта. Создайте новую и отправьте друзьям свежую ссылку.',
+    roomFull: 'В этой комнате уже нет свободных мест.',
 };
 
 const defaultUrl = () => `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws`;

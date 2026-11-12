@@ -101,9 +101,9 @@ export class Room {
         } else {
             // In a running game a newcomer may take over a seat a bot is playing.
             seat = JOIN_ORDER.find((s) => this.members[s] === null) ?? -1;
-            if (seat < 0) throw new RoomError('roomFull', 'За столом нет свободных мест');
+            if (seat < 0) throw new RoomError('roomFull', 'В комнате нет свободных мест');
             if (this.abandoned) this.host = seat as Seat;
-            if (!this.title) this.title = `Стол ${name}`.slice(0, MAX_TITLE);
+            if (!this.title) this.title = `Комната ${name}`.slice(0, MAX_TITLE);
             this.members[seat] = { name, token: randomBytes(12).toString('hex'), connection };
         }
 
@@ -154,7 +154,7 @@ export class Room {
     handle(seat: Seat, message: ClientMessage): void {
         switch (message.type) {
             case 'start':
-                if (seat !== this.host) throw new RoomError('notHost', 'Начать игру может только хозяин стола');
+                if (seat !== this.host) throw new RoomError('notHost', 'Начать игру может только хозяин комнаты');
                 if (!this.started) this.start();
                 break;
             case 'action':

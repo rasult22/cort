@@ -34,11 +34,11 @@ export function Lobby({ room, seat, error, onStart, onExit }: LobbyProps) {
             <Ornament />
             <div className="panel lobby">
                 <div className="lobby-title">{room.title}</div>
-                <div className="panel-kicker">{room.open ? 'открытый стол · код' : 'только по ссылке · код'}</div>
+                <div className="panel-kicker">{room.open ? 'открытая комната · код' : 'только по ссылке · код'}</div>
                 <div className="lobby-code">{room.code}</div>
 
                 <div className="lobby-link">
-                    <input readOnly value={link} onFocus={(event) => event.currentTarget.select()} aria-label="Ссылка на стол" />
+                    <input readOnly value={link} onFocus={(event) => event.currentTarget.select()} aria-label="Ссылка на комнату" />
                     <button type="button" className="button" onClick={copy}>
                         {copied ? 'Скопировано' : 'Копировать'}
                     </button>

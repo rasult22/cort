@@ -66,12 +66,12 @@ export class Lobby {
         const seated = this.seats.get(connection);
 
         if (message.type === 'create' || message.type === 'join') {
-            if (seated) throw new RoomError('badMessage', 'Вы уже за столом');
+            if (seated) throw new RoomError('badMessage', 'Вы уже в комнате');
             const room =
                 message.type === 'create'
                     ? this.createRoom({ title: String(message.title ?? ''), open: message.open === true })
                     : this.rooms.get(String(message.code).toUpperCase());
-            if (!room) throw new RoomError('roomNotFound', 'Стол не найден');
+            if (!room) throw new RoomError('roomNotFound', 'Комната не найдена');
             const token = message.type === 'join' ? message.token : undefined;
             const seat = room.join(connection, String(message.name ?? ''), token);
             this.seats.set(connection, { room, seat });
@@ -80,7 +80,7 @@ export class Lobby {
             return;
         }
 
-        if (!seated) throw new RoomError('notInRoom', 'Сначала сядьте за стол');
+        if (!seated) throw new RoomError('notInRoom', 'Сначала войдите в комнату');
         seated.room.handle(seated.seat, message);
     }
 

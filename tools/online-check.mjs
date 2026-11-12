@@ -24,17 +24,17 @@ const host = await open('host', { width: 1280, height: 800 });
 const guest = await open('guest', { width: 390, height: 844 });
 
 await host.goto(base);
-await host.getByPlaceholder('Игрок').fill('Расул');
-await host.getByRole('button', { name: 'Создать стол', exact: true }).click();
-await host.getByPlaceholder(/^Стол /).fill('Вечерний корт');
-await host.getByRole('button', { name: 'Создать стол', exact: true }).click();
+await host.getByPlaceholder('Как вас зовут?').fill('Расул');
+await host.getByRole('button', { name: 'Создать комнату', exact: true }).click();
+await host.getByPlaceholder(/^Комната /).fill('Вечерний корт');
+await host.getByRole('button', { name: 'Создать комнату', exact: true }).click();
 await host.locator('.lobby-code').waitFor();
 const code = (await host.locator('.lobby-code').textContent()).trim();
 console.log(`table ${code}`);
 
 await guest.goto(`${base}/?room=${code}`);
-await guest.getByPlaceholder('Игрок').fill('Алия');
-await guest.getByRole('button', { name: /Сесть за стол/ }).click();
+await guest.getByPlaceholder('Как вас зовут?').fill('Алия');
+await guest.getByRole('button', { name: /Войти в комнату/ }).click();
 await guest.locator('.lobby-code').waitFor();
 await host.getByText('Алия').waitFor();
 await host.screenshot({ path: join(outDir, 'online-1-host-lobby.png') });
@@ -83,7 +83,7 @@ console.log(`host: ${await result(host)} | guest: ${await result(guest)} | moves
 
 // A dropped connection: the guest reloads and must land back in the same seat.
 await guest.reload();
-await guest.getByRole('button', { name: /Сесть за стол/ }).click();
+await guest.getByRole('button', { name: /Войти в комнату/ }).click();
 await guest.locator('.hand-card').first().waitFor({ timeout: 15000 });
 console.log('guest rejoined the running game');
 await guest.screenshot({ path: join(outDir, 'online-5-guest-rejoined.png') });

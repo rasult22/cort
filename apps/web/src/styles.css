@@ -75,7 +75,7 @@ button:disabled {
     width: min(74vmin, 560px);
     transform: translate(-50%, -50%);
     color: var(--gold);
-    opacity: 0.13;
+    opacity: 0.17;
 }
 
 .table-center {
@@ -1000,6 +1000,19 @@ button:disabled {
     margin: 0 0 5px 4px;
     font-size: 12px;
     color: var(--ink-dim);
+}
+
+.field em {
+    display: block;
+    margin: 6px 0 0 4px;
+    font-size: 12px;
+    font-style: normal;
+    color: #ff9aa9;
+}
+
+.field.invalid input {
+    border-color: #ff7088;
+    box-shadow: 0 0 0 3px rgba(255, 112, 136, 0.18);
 }
 
 input {

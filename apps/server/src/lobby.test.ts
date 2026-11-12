@@ -267,7 +267,7 @@ describe('online tables', () => {
         ]);
         expect(open.room).toMatchObject({ title: 'Вечерний корт', open: true });
         // A table without a name is called after its host.
-        expect(secret.room).toMatchObject({ title: 'Стол Алия', open: false });
+        expect(secret.room).toMatchObject({ title: 'Комната Алия', open: false });
 
         // A stranger picks it from the list and sits down.
         const stranger = client();

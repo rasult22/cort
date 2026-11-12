@@ -34,11 +34,11 @@ export function OpenTables({ onJoin }: { onJoin: (code: string) => void }) {
     return (
         <div className="tables">
             <div className="tables-head">
-                <span>Открытые столы</span>
+                <span>Открытые комнаты</span>
                 <span>{tables.length || ''}</span>
             </div>
             {tables.length === 0 ? (
-                <div className="tables-empty">Пока никто не ждёт. Создайте открытый стол — к вам подсядут.</div>
+                <div className="tables-empty">Пока никто не ждёт. Создайте открытую комнату — к вам присоединятся.</div>
             ) : (
                 <div className="tables-list">
                     {tables.map((table) => (

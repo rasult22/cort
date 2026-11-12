@@ -26,6 +26,7 @@ for (const [name, viewport] of Object.entries(VIEWPORTS)) {
     await page.goto(`${base}/?seed=7`);
     await shot('1-menu');
 
+    await page.getByPlaceholder('Как вас зовут?').fill('Расул');
     await page.getByRole('button', { name: 'Играть с ботами' }).click();
     await page.waitForTimeout(1200);
     await shot('2-dealt');

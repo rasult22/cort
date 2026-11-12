@@ -1,5 +1,5 @@
 import { MAX_TITLE } from '@cort/protocol';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { GameScreen } from './game/GameScreen';
 import { Ornament } from './game/Ornament';
 import { SuitIcon } from './game/Card';
@@ -31,8 +31,19 @@ export function App() {
     /** The "new table" form: null while closed. */
     const [draft, setDraft] = useState<{ title: string; open: boolean } | null>(null);
 
-    const playerName = name.trim() || 'Игрок';
+    const [nameMissing, setNameMissing] = useState(false);
+    const nameInput = useRef<HTMLInputElement>(null);
+
+    const playerName = name.trim();
+    /** Every way into a game goes through here: no name, no game. */
+    const requireName = (): boolean => {
+        if (playerName) return true;
+        setNameMissing(true);
+        nameInput.current?.focus();
+        return false;
+    };
     const begin = (create: () => Session) => {
+        if (!requireName()) return;
         unlockAudio();
         try {
             localStorage.setItem(NAME_KEY, name.trim());
@@ -87,11 +98,11 @@ export function App() {
                 >
                     {header}
                     <label className="field">
-                        <span>Название стола</span>
+                        <span>Название комнаты</span>
                         <input
                             value={draft.title}
                             maxLength={MAX_TITLE}
-                            placeholder={`Стол ${playerName}`}
+                            placeholder={`Комната ${playerName}`}
                             autoFocus
                             onChange={(event) => setDraft({ ...draft, title: event.target.value })}
                         />
@@ -99,12 +110,12 @@ export function App() {
                     <label className="toggle">
                         <input type="checkbox" checked={draft.open} onChange={(event) => setDraft({ ...draft, open: event.target.checked })} />
                         <span>
-                            Открытый стол
-                            <small>{draft.open ? 'Виден в списке, сесть может любой' : 'Только по ссылке или коду'}</small>
+                            Открытая комната
+                            <small>{draft.open ? 'Видна в списке, войти может любой' : 'Только по ссылке или коду'}</small>
                         </span>
                     </label>
                     <button type="submit" className="button primary wide">
-                        Создать стол
+                        Создать комнату
                     </button>
                     <button type="button" className="button ghost wide" onClick={() => setDraft(null)}>
                         Назад
@@ -126,14 +137,26 @@ export function App() {
 
                 {notice && <div className="menu-notice">{notice}</div>}
 
-                <label className="field">
+                <label className={`field ${nameMissing ? 'invalid' : ''}`}>
                     <span>Ваше имя</span>
-                    <input value={name} maxLength={16} placeholder="Игрок" onChange={(event) => setName(event.target.value)} />
+                    <input
+                        ref={nameInput}
+                        value={name}
+                        maxLength={16}
+                        placeholder="Как вас зовут?"
+                        required
+                        aria-invalid={nameMissing}
+                        onChange={(event) => {
+                            setName(event.target.value);
+                            if (event.target.value.trim()) setNameMissing(false);
+                        }}
+                    />
+                    {nameMissing && <em>Введите имя, чтобы начать игру</em>}
                 </label>
 
                 {invite && (
                     <button type="button" className="button primary wide" onClick={() => join(invite)}>
-                        Сесть за стол {invite}
+                        Войти в комнату {invite}
                     </button>
                 )}
 
@@ -141,8 +164,8 @@ export function App() {
                     Играть с ботами
                 </button>
 
-                <button type="button" className="button wide" onClick={() => setDraft({ title: '', open: true })}>
-                    Создать стол
+                <button type="button" className="button wide" onClick={() => requireName() && setDraft({ title: '', open: true })}>
+                    Создать комнату
                 </button>
 
                 <OpenTables onJoin={join} />
@@ -157,8 +180,8 @@ export function App() {
                     <input
                         value={code}
                         maxLength={5}
-                        placeholder="Код стола"
-                        aria-label="Код стола"
+                        placeholder="Код комнаты"
+                        aria-label="Код комнаты"
                         onChange={(event) => setCode(event.target.value.toUpperCase())}
                     />
                     <button type="submit" className="button" disabled={!code.trim()}>
