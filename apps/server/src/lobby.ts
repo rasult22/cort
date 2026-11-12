@@ -6,7 +6,7 @@ import { Room, RoomError, type Connection, type RoomSettings } from './room';
 /** No look-alike characters, so a code survives being read out loud. */
 const CODE_ALPHABET = 'ABCDEFGHJKLMNPRSTUVWXYZ';
 const CODE_LENGTH = 4;
-/** How long a table with nobody connected is kept, so players can come back. */
+/** How long a table with nobody connected is kept, started or not, so players can come back. */
 const ABANDONED_TTL_MS = 10 * 60_000;
 const MAX_LISTED = 30;
 
@@ -55,13 +55,11 @@ export class Lobby {
         const seated = this.seats.get(connection);
         if (!seated) return;
         this.seats.delete(connection);
-        seated.room.leave(seated.seat);
+        seated.room.leave(seated.seat, connection);
         if (!seated.room.abandoned) return;
-        if (seated.room.started) {
-            this.expiry.set(seated.room.code, setTimeout(() => this.remove(seated.room), ABANDONED_TTL_MS));
-        } else {
-            this.remove(seated.room);
-        }
+        // Nobody is connected, but they may only have switched apps: keep the table for a while.
+        clearTimeout(this.expiry.get(seated.room.code));
+        this.expiry.set(seated.room.code, setTimeout(() => this.remove(seated.room), ABANDONED_TTL_MS));
     }
 
     private dispatch(connection: Connection, message: ClientMessage): void {

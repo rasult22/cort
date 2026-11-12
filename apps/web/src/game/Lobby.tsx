@@ -59,7 +59,9 @@ export function Lobby({ room, seat, error, onStart, onExit }: LobbyProps) {
                                 <div className="lobby-seat-note">
                                     {info.kind === 'empty'
                                         ? 'сядет бот'
-                                        : info.seat % 2 === seat % 2
+                                        : !info.connected
+                                          ? 'отошёл'
+                                          : info.seat % 2 === seat % 2
                                           ? 'ваша команда'
                                           : 'соперники'}
                                 </div>

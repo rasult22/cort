@@ -33,6 +33,7 @@ export class RemoteSession extends BaseSession implements Session {
     constructor(private readonly options: RemoteOptions) {
         super();
         this.code = options.code?.toUpperCase() ?? null;
+        document.addEventListener('visibilitychange', this.onVisible);
         this.connect();
     }
 
@@ -59,10 +60,24 @@ export class RemoteSession extends BaseSession implements Session {
     dispose(): void {
         this.disposed = true;
         if (this.retry) clearTimeout(this.retry);
+        document.removeEventListener('visibilitychange', this.onVisible);
         this.socket?.close();
     }
 
+    /**
+     * Back from another app. Phones drop the connection in the background and
+     * may not report it until much later, so check now instead of waiting.
+     */
+    private onVisible = (): void => {
+        if (this.disposed || document.visibilityState !== 'visible') return;
+        const state = this.socket?.readyState;
+        if (state === WebSocket.OPEN || state === WebSocket.CONNECTING) return;
+        if (this.retry) clearTimeout(this.retry);
+        this.connect();
+    };
+
     private connect(): void {
+        if (this.socket) this.socket.onclose = null; // The connection being replaced must not schedule a retry.
         const socket = new WebSocket(this.options.url ?? defaultUrl());
         this.socket = socket;
 

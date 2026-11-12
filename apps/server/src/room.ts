@@ -26,6 +26,12 @@ const SEATS: Seat[] = [0, 1, 2, 3];
 const JOIN_ORDER: Seat[] = [0, 2, 1, 3];
 const BOT_NAMES = ['Алим', 'Дильназ', 'Ильхам', 'Рамиля'];
 const MAX_NAME = 16;
+/**
+ * How long a seat is held for someone who dropped out before the game began.
+ * On a phone, switching to a messenger to send the invite link is enough to
+ * drop the connection, so this has to cover writing a message.
+ */
+const SEAT_HOLD_MS = 3 * 60_000;
 
 export interface RoomSettings {
     title?: string;
@@ -50,6 +56,7 @@ export class Room {
     private members: (Member | null)[] = [null, null, null, null];
     private host: Seat = 0;
     private runner: GameRunner | null = null;
+    private holds = new Map<Seat, ReturnType<typeof setTimeout>>();
 
     private title: string;
 
@@ -90,6 +97,7 @@ export class Room {
 
         if (seat >= 0) {
             this.members[seat]!.connection = connection;
+            this.cancelHold(seat as Seat);
         } else {
             // In a running game a newcomer may take over a seat a bot is playing.
             seat = JOIN_ORDER.find((s) => this.members[s] === null) ?? -1;
@@ -108,20 +116,39 @@ export class Room {
         return seat as Seat;
     }
 
-    /** A player's connection dropped. Before the start they lose the seat; in a game a bot covers for them. */
-    leave(seat: Seat): void {
+    /**
+     * A player's connection dropped. Their seat is kept: in a game a bot covers
+     * for them, and before the start the seat is held for a while so they can
+     * come back to it.
+     */
+    leave(seat: Seat, connection: Connection): void {
         const member = this.members[seat];
-        if (!member) return;
+        // An old connection closing after the player already came back on a new one.
+        if (!member || member.connection !== connection) return;
+        member.connection = null;
         if (this.started) {
-            member.connection = null;
             this.runner!.setBot(seat, true);
         } else {
-            this.members[seat] = null;
+            this.cancelHold(seat);
+            this.holds.set(seat, setTimeout(() => this.release(seat), SEAT_HOLD_MS));
         }
+        this.broadcastRoom();
+    }
+
+    /** The hold ran out: the seat is free again, and a host who never returned hands over. */
+    private release(seat: Seat): void {
+        this.holds.delete(seat);
+        if (this.started || this.members[seat]?.connection) return;
+        this.members[seat] = null;
         if (seat === this.host) {
             this.host = SEATS.find((s) => this.members[s]?.connection) ?? this.host;
         }
         this.broadcastRoom();
+    }
+
+    private cancelHold(seat: Seat): void {
+        clearTimeout(this.holds.get(seat));
+        this.holds.delete(seat);
     }
 
     handle(seat: Seat, message: ClientMessage): void {
@@ -148,9 +175,12 @@ export class Room {
 
     dispose(): void {
         this.runner?.dispose();
+        SEATS.forEach((seat) => this.cancelHold(seat));
     }
 
     private start(): void {
+        // Anyone still away keeps their seat; a bot plays it until they return.
+        SEATS.forEach((seat) => this.cancelHold(seat));
         this.runner = new GameRunner({
             bots: this.members.map((member) => !member?.connection),
             delays: this.delays,

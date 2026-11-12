@@ -182,16 +182,77 @@ describe('online tables', () => {
         expect(back.view.handNumber).toBe(host.view.handNumber);
     });
 
-    it('frees the seat of someone who leaves before the start, and forgets empty tables', () => {
+    it('keeps the table when its creator switches apps to send the link, and gives the seat back', () => {
+        const host = client();
+        host.say({ type: 'create', name: 'Расул', open: true });
+        const { code, token, seat } = host.last('joined');
+
+        // The phone drops the connection the moment the browser goes to the background.
+        lobby.disconnect(host);
+        vi.advanceTimersByTime(2 * 60_000);
+        expect(lobby.roomCount).toBe(1);
+        // An empty table is not advertised to strangers meanwhile.
+        expect(lobby.openRooms()).toEqual([]);
+
+        const back = client();
+        back.say({ type: 'join', code, name: 'Расул', token });
+        expect(back.errors).toEqual([]);
+        expect(back.seat).toBe(seat);
+        expect(back.room.host).toBe(seat);
+        expect(back.room.seats[seat]).toMatchObject({ kind: 'human', connected: true });
+
+        // Coming back cancels the countdown: the table does not vanish later.
+        vi.advanceTimersByTime(60 * 60_000);
+        expect(lobby.roomCount).toBe(1);
+    });
+
+    it('holds a seat for a while before the start, then frees it', () => {
         const host = client();
         const guest = client();
         host.say({ type: 'create', name: 'Расул' });
         guest.say({ type: 'join', code: host.room.code, name: 'Алия' });
 
         lobby.disconnect(guest);
+        expect(host.room.seats[guest.seat]).toMatchObject({ kind: 'human', connected: false });
+
+        vi.advanceTimersByTime(3 * 60_000);
         expect(host.room.seats.map((s) => s.kind)).toEqual(['human', 'empty', 'empty', 'empty']);
+    });
+
+    it('hands the table to someone else if the host never comes back', () => {
+        const host = client();
+        const guest = client();
+        host.say({ type: 'create', name: 'Расул' });
+        guest.say({ type: 'join', code: host.room.code, name: 'Алия' });
 
         lobby.disconnect(host);
+        expect(guest.room.host).toBe(host.seat);
+        vi.advanceTimersByTime(3 * 60_000);
+        expect(guest.room.host).toBe(guest.seat);
+        guest.say({ type: 'start' });
+        expect(guest.room.started).toBe(true);
+    });
+
+    it('is not fooled when an old connection closes after the player has already returned', () => {
+        const host = client();
+        host.say({ type: 'create', name: 'Расул' });
+        const { code, token, seat } = host.last('joined');
+
+        // The new connection arrives before the server notices the old one is dead.
+        const back = client();
+        back.say({ type: 'join', code, name: 'Расул', token });
+        lobby.disconnect(host);
+
+        expect(back.room.seats[seat].connected).toBe(true);
+        vi.advanceTimersByTime(60 * 60_000);
+        expect(lobby.roomCount).toBe(1);
+    });
+
+    it('forgets a table that everyone has left for good', () => {
+        const host = client();
+        host.say({ type: 'create', name: 'Расул' });
+        lobby.disconnect(host);
+        vi.advanceTimersByTime(10 * 60_000);
         expect(lobby.roomCount).toBe(0);
     });
 
@@ -221,8 +282,10 @@ describe('online tables', () => {
         guests.forEach((guest, i) => guest.say({ type: 'join', code: host.room.code, name: `Гость ${i}` }));
         expect(lobby.openRooms()).toEqual([]);
 
-        // A seat frees up: the table is listed again.
+        // Someone drops out: their seat is held first, then freed, and the table is listed again.
         lobby.disconnect(guests[0]);
+        expect(lobby.openRooms()).toEqual([]);
+        vi.advanceTimersByTime(3 * 60_000);
         expect(lobby.openRooms()).toHaveLength(1);
 
         [host, guests[1], guests[2]].forEach((player) => lobby.disconnect(player));
