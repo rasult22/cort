@@ -1,5 +1,13 @@
 import { GameRunner, RANKS, RuleError, SUITS, viewFor, type Action, type RunnerDelays, type Seat } from '@cort/engine';
-import { EMOTES, type ClientMessage, type ErrorCode, type RoomInfo, type ServerMessage } from '@cort/protocol';
+import {
+    EMOTES,
+    MAX_TITLE,
+    type ClientMessage,
+    type ErrorCode,
+    type RoomInfo,
+    type RoomSummary,
+    type ServerMessage,
+} from '@cort/protocol';
 import { randomBytes, randomInt } from 'node:crypto';
 
 /** Anything we can push messages to; a WebSocket in production, a spy in tests. */
@@ -19,6 +27,12 @@ const JOIN_ORDER: Seat[] = [0, 2, 1, 3];
 const BOT_NAMES = ['Алим', 'Дильназ', 'Ильхам', 'Рамиля'];
 const MAX_NAME = 16;
 
+export interface RoomSettings {
+    title?: string;
+    /** Show the table in the public list. */
+    open?: boolean;
+}
+
 export class RoomError extends Error {
     constructor(
         public code: ErrorCode,
@@ -37,10 +51,28 @@ export class Room {
     private host: Seat = 0;
     private runner: GameRunner | null = null;
 
+    private title: string;
+
     constructor(
         readonly code: string,
+        private readonly settings: RoomSettings = {},
         private readonly delays?: Partial<RunnerDelays>,
-    ) {}
+    ) {
+        this.title = (settings.title ?? '').trim().slice(0, MAX_TITLE);
+    }
+
+    /** The table as shown in the public list, or null if it should not be listed. */
+    get summary(): RoomSummary | null {
+        const people = this.members.filter((member) => member !== null).length;
+        if (!this.settings.open || this.abandoned || people === 4) return null;
+        return {
+            code: this.code,
+            title: this.title,
+            host: this.members[this.host]?.name ?? '',
+            players: people,
+            started: this.started,
+        };
+    }
 
     get started(): boolean {
         return this.runner !== null;
@@ -63,6 +95,7 @@ export class Room {
             seat = JOIN_ORDER.find((s) => this.members[s] === null) ?? -1;
             if (seat < 0) throw new RoomError('roomFull', 'За столом нет свободных мест');
             if (this.abandoned) this.host = seat as Seat;
+            if (!this.title) this.title = `Стол ${name}`.slice(0, MAX_TITLE);
             this.members[seat] = { name, token: randomBytes(12).toString('hex'), connection };
         }
 
@@ -153,6 +186,8 @@ export class Room {
     private info(): RoomInfo {
         return {
             code: this.code,
+            title: this.title,
+            open: this.settings.open === true,
             host: this.host,
             started: this.started,
             seats: SEATS.map((seat) => {

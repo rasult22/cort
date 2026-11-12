@@ -631,34 +631,49 @@ button:disabled {
     right: calc(10px + env(safe-area-inset-right));
     bottom: calc(var(--cw) * 1.84 + env(safe-area-inset-bottom));
     display: flex;
-    gap: 6px;
-    padding: 4px;
-    border-radius: 999px;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 8px;
     z-index: 7;
 }
 
-.emotes.open {
-    background: var(--panel);
+.emotes-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 4px;
+    padding: 8px;
+    border-radius: 18px;
+    background: rgba(6, 26, 20, 0.92);
     border: 1px solid var(--panel-line);
-    backdrop-filter: blur(6px);
+    backdrop-filter: blur(8px);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
 }
 
 .emotes button {
-    width: 38px;
-    height: 38px;
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    font-size: 24px;
+    transition:
+        transform 0.12s,
+        background 0.12s;
+}
+
+.emotes-grid button:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.emotes-grid button:active {
+    transform: scale(1.25);
+}
+
+.emotes .emotes-toggle {
+    width: 42px;
+    height: 42px;
     border-radius: 50%;
-    font-size: 20px;
-    transition: transform 0.12s;
-}
-
-.emotes button:hover {
-    transform: scale(1.2);
-}
-
-.emotes-toggle {
     background: var(--panel);
     border: 1px solid var(--panel-line);
-    font-size: 17px !important;
+    font-size: 18px;
 }
 
 /* ───────── Trump ───────── */
@@ -924,10 +939,14 @@ button:disabled {
 
 .menu,
 .game:has(> .panel) {
-    display: grid;
-    place-items: center;
+    display: flex;
     padding: 16px;
     overflow-y: auto;
+}
+
+/* Centred when it fits, scrollable from the top when it does not. */
+.game > .panel {
+    margin: auto;
 }
 
 .menu .panel,
@@ -1011,6 +1030,150 @@ input::placeholder {
     border: 1px solid rgba(255, 255, 255, 0.18);
     font-size: 14px;
     line-height: 1.4;
+}
+
+.tables {
+    margin-top: 18px;
+    text-align: left;
+}
+
+.tables-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin: 0 4px 8px;
+    font-size: 12px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-dim);
+}
+
+.tables-empty {
+    padding: 14px;
+    border-radius: 14px;
+    border: 1px dashed var(--panel-line);
+    font-size: 13px;
+    text-align: center;
+    color: var(--ink-dim);
+}
+
+.tables-list {
+    display: grid;
+    gap: 6px;
+    max-height: 232px;
+    overflow-y: auto;
+}
+
+.table-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid transparent;
+    text-align: left;
+    transition:
+        background 0.15s,
+        border-color 0.15s;
+}
+
+.table-row:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: var(--panel-line);
+}
+
+.table-row-title {
+    font-size: 15px;
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.table-row-note {
+    font-size: 12px;
+    color: var(--ink-dim);
+}
+
+.table-row-seats {
+    display: flex;
+    gap: 4px;
+}
+
+.table-row-seats i {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.16);
+}
+
+.table-row-seats i.taken {
+    background: var(--gold);
+}
+
+.toggle {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 12px 4px 4px;
+    text-align: left;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.toggle input {
+    appearance: none;
+    flex: none;
+    width: 46px;
+    height: 28px;
+    padding: 0;
+    border-radius: 14px;
+    border: 1px solid var(--panel-line);
+    background: rgba(0, 0, 0, 0.3);
+    position: relative;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.toggle input::after {
+    content: '';
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--ink-dim);
+    transition:
+        transform 0.15s,
+        background 0.15s;
+}
+
+.toggle input:checked {
+    background: rgba(233, 196, 106, 0.3);
+    border-color: var(--gold);
+}
+
+.toggle input:checked::after {
+    transform: translateX(18px);
+    background: var(--gold);
+}
+
+.toggle small {
+    display: block;
+    font-size: 12px;
+    color: var(--ink-dim);
+}
+
+.lobby-title {
+    margin-bottom: 6px;
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 22px;
+    font-weight: 700;
+    overflow-wrap: anywhere;
 }
 
 .menu-join {

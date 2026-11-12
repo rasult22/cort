@@ -9,6 +9,9 @@ export interface RemoteOptions {
     name: string;
     /** Room to join; omit to create a new one. */
     code?: string;
+    /** For a new table: its name, and whether to list it publicly. */
+    title?: string;
+    open?: boolean;
     url?: string;
 }
 
@@ -68,7 +71,7 @@ export class RemoteSession extends BaseSession implements Session {
             if (this.code) {
                 this.send({ type: 'join', code: this.code, name: this.options.name, token: loadToken(this.code) });
             } else {
-                this.send({ type: 'create', name: this.options.name });
+                this.send({ type: 'create', name: this.options.name, title: this.options.title, open: this.options.open });
             }
         };
 

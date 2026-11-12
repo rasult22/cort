@@ -33,7 +33,8 @@ export function Lobby({ room, seat, error, onStart, onExit }: LobbyProps) {
         <div className="game">
             <Ornament />
             <div className="panel lobby">
-                <div className="panel-kicker">Стол</div>
+                <div className="lobby-title">{room.title}</div>
+                <div className="panel-kicker">{room.open ? 'открытый стол · код' : 'только по ссылке · код'}</div>
                 <div className="lobby-code">{room.code}</div>
 
                 <div className="lobby-link">

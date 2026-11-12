@@ -36,6 +36,12 @@ const server = createServer((request, response) => {
         return;
     }
 
+    if (path === '/rooms') {
+        response.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'no-store' });
+        response.end(JSON.stringify(lobby.openRooms()));
+        return;
+    }
+
     // Static files, falling back to index.html so links like /?room=ABCD work.
     let file = normalize(join(WEB_ROOT, path));
     if (!file.startsWith(WEB_ROOT) || !existsSync(file) || statSync(file).isDirectory()) {

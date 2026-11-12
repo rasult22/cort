@@ -217,20 +217,23 @@ export function GameScreen({ session, onExit }: { session: Session; onExit: (mes
                 )}
             </div>
 
-            <div className={`emotes ${emotesOpen ? 'open' : ''}`}>
-                {emotesOpen &&
-                    EMOTES.map((emote) => (
-                        <button
-                            key={emote}
-                            type="button"
-                            onClick={() => {
-                                session.emote(emote);
-                                setEmotesOpen(false);
-                            }}
-                        >
-                            {emote}
-                        </button>
-                    ))}
+            <div className="emotes">
+                {emotesOpen && (
+                    <div className="emotes-grid">
+                        {EMOTES.map((emote) => (
+                            <button
+                                key={emote}
+                                type="button"
+                                onClick={() => {
+                                    session.emote(emote);
+                                    setEmotesOpen(false);
+                                }}
+                            >
+                                {emote}
+                            </button>
+                        ))}
+                    </div>
+                )}
                 <button type="button" className="emotes-toggle" aria-label="Эмоции" onClick={() => setEmotesOpen(!emotesOpen)}>
                     {emotesOpen ? '✕' : '😊'}
                 </button>

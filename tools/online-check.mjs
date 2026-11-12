@@ -25,7 +25,9 @@ const guest = await open('guest', { width: 390, height: 844 });
 
 await host.goto(base);
 await host.getByPlaceholder('Игрок').fill('Расул');
-await host.getByRole('button', { name: 'Создать стол для друзей' }).click();
+await host.getByRole('button', { name: 'Создать стол', exact: true }).click();
+await host.getByPlaceholder(/^Стол /).fill('Вечерний корт');
+await host.getByRole('button', { name: 'Создать стол', exact: true }).click();
 await host.locator('.lobby-code').waitFor();
 const code = (await host.locator('.lobby-code').textContent()).trim();
 console.log(`table ${code}`);

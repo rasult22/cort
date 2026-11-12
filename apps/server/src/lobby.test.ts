@@ -195,6 +195,52 @@ describe('online tables', () => {
         expect(lobby.roomCount).toBe(0);
     });
 
+    it('lists open tables for anyone to join, and keeps private ones out of the list', () => {
+        const open = client();
+        open.say({ type: 'create', name: 'Расул', title: '  Вечерний корт  ', open: true });
+        const secret = client();
+        secret.say({ type: 'create', name: 'Алия' });
+
+        expect(lobby.openRooms()).toEqual([
+            { code: open.room.code, title: 'Вечерний корт', host: 'Расул', players: 1, started: false },
+        ]);
+        expect(open.room).toMatchObject({ title: 'Вечерний корт', open: true });
+        // A table without a name is called after its host.
+        expect(secret.room).toMatchObject({ title: 'Стол Алия', open: false });
+
+        // A stranger picks it from the list and sits down.
+        const stranger = client();
+        stranger.say({ type: 'join', code: lobby.openRooms()[0].code, name: 'Тимур' });
+        expect(lobby.openRooms()[0].players).toBe(2);
+    });
+
+    it('drops a table from the list once it is full or empty', () => {
+        const host = client();
+        host.say({ type: 'create', name: 'Расул', open: true });
+        const guests = [client(), client(), client()];
+        guests.forEach((guest, i) => guest.say({ type: 'join', code: host.room.code, name: `Гость ${i}` }));
+        expect(lobby.openRooms()).toEqual([]);
+
+        // A seat frees up: the table is listed again.
+        lobby.disconnect(guests[0]);
+        expect(lobby.openRooms()).toHaveLength(1);
+
+        [host, guests[1], guests[2]].forEach((player) => lobby.disconnect(player));
+        expect(lobby.openRooms()).toEqual([]);
+    });
+
+    it('keeps a running open table listed while a bot holds a seat', () => {
+        const host = client();
+        host.say({ type: 'create', name: 'Расул', open: true });
+        host.say({ type: 'start' });
+        expect(lobby.openRooms()).toMatchObject([{ started: true, players: 1 }]);
+
+        const late = client();
+        late.say({ type: 'join', code: host.room.code, name: 'Опоздавший' });
+        expect(late.view.seat).toBe(late.seat);
+        expect(host.room.seats[late.seat]).toMatchObject({ kind: 'human', name: 'Опоздавший' });
+    });
+
     it('passes emotes around the table, but only known ones', () => {
         const { host, guest } = startedTable();
         guest.say({ type: 'emote', emote: '🔥' });

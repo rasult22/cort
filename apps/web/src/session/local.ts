@@ -24,6 +24,8 @@ export class LocalSession extends BaseSession implements Session {
         this.seed = options.seed ?? randomSeed();
         this.room = {
             code: '',
+            title: '',
+            open: false,
             host: MY_SEAT,
             started: true,
             seats: [options.name, ...BOT_NAMES].map((name, seat) => ({

@@ -1,7 +1,9 @@
+import { MAX_TITLE } from '@cort/protocol';
 import { useState } from 'react';
 import { GameScreen } from './game/GameScreen';
 import { Ornament } from './game/Ornament';
 import { SuitIcon } from './game/Card';
+import { OpenTables } from './menu/OpenTables';
 import { LocalSession } from './session/local';
 import { RemoteSession } from './session/remote';
 import type { Session } from './session/session';
@@ -26,6 +28,8 @@ export function App() {
     const [invite, setInvite] = useState(() => arrival.get('room')?.toUpperCase() || null);
     const [code, setCode] = useState('');
     const [notice, setNotice] = useState<string | null>(null);
+    /** The "new table" form: null while closed. */
+    const [draft, setDraft] = useState<{ title: string; open: boolean } | null>(null);
 
     const playerName = name.trim() || 'Игрок';
     const begin = (create: () => Session) => {
@@ -36,8 +40,10 @@ export function App() {
             // The name just will not be remembered.
         }
         setNotice(null);
+        setDraft(null);
         setSession(create());
     };
+    const join = (tableCode: string) => begin(() => new RemoteSession({ name: playerName, code: tableCode }));
 
     if (session) {
         return (
@@ -55,6 +61,59 @@ export function App() {
         );
     }
 
+    const header = (
+        <>
+            <div className="menu-suits">
+                <SuitIcon suit="spades" />
+                <SuitIcon suit="hearts" className="red" />
+                <SuitIcon suit="clubs" />
+                <SuitIcon suit="diamonds" className="red" />
+            </div>
+            <h1 className="menu-title">Корт</h1>
+            <p className="menu-subtitle">уйгурская карточная игра</p>
+        </>
+    );
+
+    if (draft) {
+        return (
+            <div className="game menu">
+                <Ornament />
+                <form
+                    className="panel menu-panel"
+                    onSubmit={(event) => {
+                        event.preventDefault();
+                        begin(() => new RemoteSession({ name: playerName, title: draft.title.trim(), open: draft.open }));
+                    }}
+                >
+                    {header}
+                    <label className="field">
+                        <span>Название стола</span>
+                        <input
+                            value={draft.title}
+                            maxLength={MAX_TITLE}
+                            placeholder={`Стол ${playerName}`}
+                            autoFocus
+                            onChange={(event) => setDraft({ ...draft, title: event.target.value })}
+                        />
+                    </label>
+                    <label className="toggle">
+                        <input type="checkbox" checked={draft.open} onChange={(event) => setDraft({ ...draft, open: event.target.checked })} />
+                        <span>
+                            Открытый стол
+                            <small>{draft.open ? 'Виден в списке, сесть может любой' : 'Только по ссылке или коду'}</small>
+                        </span>
+                    </label>
+                    <button type="submit" className="button primary wide">
+                        Создать стол
+                    </button>
+                    <button type="button" className="button ghost wide" onClick={() => setDraft(null)}>
+                        Назад
+                    </button>
+                </form>
+            </div>
+        );
+    }
+
     const seed = arrival.get('seed');
     const playWithBots = () =>
         begin(() => new LocalSession({ name: playerName, seed: seed ? Number(seed) : undefined, demo: arrival.has('demo') }));
@@ -63,14 +122,7 @@ export function App() {
         <div className="game menu">
             <Ornament />
             <div className="panel menu-panel">
-                <div className="menu-suits">
-                    <SuitIcon suit="spades" />
-                    <SuitIcon suit="hearts" className="red" />
-                    <SuitIcon suit="clubs" />
-                    <SuitIcon suit="diamonds" className="red" />
-                </div>
-                <h1 className="menu-title">Корт</h1>
-                <p className="menu-subtitle">уйгурская карточная игра</p>
+                {header}
 
                 {notice && <div className="menu-notice">{notice}</div>}
 
@@ -80,11 +132,7 @@ export function App() {
                 </label>
 
                 {invite && (
-                    <button
-                        type="button"
-                        className="button primary wide"
-                        onClick={() => begin(() => new RemoteSession({ name: playerName, code: invite }))}
-                    >
+                    <button type="button" className="button primary wide" onClick={() => join(invite)}>
                         Сесть за стол {invite}
                     </button>
                 )}
@@ -93,15 +141,17 @@ export function App() {
                     Играть с ботами
                 </button>
 
-                <button type="button" className="button wide" onClick={() => begin(() => new RemoteSession({ name: playerName }))}>
-                    Создать стол для друзей
+                <button type="button" className="button wide" onClick={() => setDraft({ title: '', open: true })}>
+                    Создать стол
                 </button>
+
+                <OpenTables onJoin={join} />
 
                 <form
                     className="menu-join"
                     onSubmit={(event) => {
                         event.preventDefault();
-                        if (code.trim()) begin(() => new RemoteSession({ name: playerName, code: code.trim() }));
+                        if (code.trim()) join(code.trim());
                     }}
                 >
                     <input

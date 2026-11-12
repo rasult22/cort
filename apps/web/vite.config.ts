@@ -5,6 +5,9 @@ export default defineConfig({
     plugins: [react()],
     server: {
         host: true,
-        proxy: { '/ws': { target: 'ws://localhost:8787', ws: true } },
+        proxy: {
+            '/ws': { target: 'ws://localhost:8787', ws: true },
+            '/rooms': 'http://localhost:8787',
+        },
     },
 });
