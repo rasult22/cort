@@ -634,19 +634,50 @@ button:disabled {
     flex-direction: column;
     align-items: flex-end;
     gap: 8px;
-    z-index: 7;
+    /* Above the trump picker: an open panel must never be drawn through. */
+    z-index: 12;
+}
+
+.emotes-panel {
+    padding: 8px;
+    border-radius: 18px;
+    background: #0a2a20;
+    border: 1px solid var(--panel-line);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+}
+
+.emotes-tabs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px;
+    margin-bottom: 8px;
+    padding: 3px;
+    border-radius: 12px;
+    background: rgba(0, 0, 0, 0.3);
+}
+
+.emotes .emotes-tabs button {
+    width: auto;
+    height: 30px;
+    border-radius: 9px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--ink-dim);
+}
+
+.emotes .emotes-tabs button.on {
+    background: rgba(233, 196, 106, 0.22);
+    color: var(--gold);
 }
 
 .emotes-grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     gap: 4px;
-    padding: 8px;
-    border-radius: 18px;
-    background: rgba(6, 26, 20, 0.92);
-    border: 1px solid var(--panel-line);
-    backdrop-filter: blur(8px);
-    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+}
+
+.emotes-grid.stickers {
+    grid-template-columns: repeat(3, 1fr);
 }
 
 .emotes button {
@@ -659,12 +690,48 @@ button:disabled {
         background 0.12s;
 }
 
+.emotes .emotes-grid.stickers button {
+    width: 76px;
+    height: 78px;
+    padding: 2px;
+}
+
+.sticker {
+    display: block;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+    filter: drop-shadow(0 3px 5px rgba(0, 0, 0, 0.35));
+}
+
 .emotes-grid button:hover {
     background: rgba(255, 255, 255, 0.1);
 }
 
 .emotes-grid button:active {
-    transform: scale(1.25);
+    transform: scale(1.15);
+}
+
+/* A sticker on the table: bigger than an emoji, and with no white disc behind it. */
+.emote-bubble.sticker-bubble {
+    width: 96px;
+    height: 98px;
+    margin-left: -48px;
+    border-radius: 0;
+    background: none;
+    box-shadow: none;
+}
+
+.plate-left .emote-bubble.sticker-bubble {
+    margin: -22px 0 0 4px;
+}
+
+.plate-right .emote-bubble.sticker-bubble {
+    margin: -22px 4px 0 0;
+}
+
+.emote-bubble.mine.sticker-bubble {
+    margin: 0;
 }
 
 .emotes .emotes-toggle {

@@ -1,6 +1,6 @@
 import { GameRunner, RANKS, RuleError, SUITS, viewFor, type Action, type RunnerDelays, type Seat } from '@cort/engine';
 import {
-    EMOTES,
+    isReaction,
     MAX_TITLE,
     type ClientMessage,
     type ErrorCode,
@@ -164,7 +164,7 @@ export class Room {
                 if (this.runner?.state?.phase === 'matchOver') this.runner.start(randomInt(0x7fffffff));
                 break;
             case 'emote':
-                if ((EMOTES as readonly string[]).includes(message.emote)) {
+                if (isReaction(message.emote)) {
                     this.broadcast({ type: 'emote', seat, emote: message.emote });
                 }
                 break;

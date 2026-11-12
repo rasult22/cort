@@ -31,6 +31,14 @@ export const MAX_TITLE = 24;
 
 export const EMOTES = ['👍', '👏', '🤝', '🙏', '😂', '😎', '🤔', '😱', '😭', '😡', '😴', '🤡', '🔥', '💪', '🎉', '❤️'] as const;
 
+/** The game's own sticker pack; the art lives in the client. */
+export const STICKERS = ['nice', 'wow', 'lol', 'hmm', 'sad', 'angry', 'hurry', 'trump', 'thanks'] as const;
+export type StickerId = (typeof STICKERS)[number];
+
+/** Everything a player may send as a reaction: a sticker id or an emoji. */
+export const isReaction = (value: unknown): value is string =>
+    typeof value === 'string' && ((STICKERS as readonly string[]).includes(value) || (EMOTES as readonly string[]).includes(value));
+
 /** Client → server. The server always decides the seat; it never trusts one from the client. */
 export type ClientMessage =
     | { type: 'create'; name: string; title?: string; open?: boolean }

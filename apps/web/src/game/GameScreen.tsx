@@ -1,5 +1,5 @@
 import { cardId, legalCards, SUITS, type Card, type Seat, type Team } from '@cort/engine';
-import { EMOTES } from '@cort/protocol';
+import { EMOTES, STICKERS } from '@cort/protocol';
 import { AnimatePresence, motion } from 'motion/react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Session } from '../session/session';
@@ -9,6 +9,7 @@ import { Hand } from './Hand';
 import { Lobby } from './Lobby';
 import { Ornament } from './Ornament';
 import { PlayerPlate } from './PlayerPlate';
+import { Reaction, Sticker, isSticker, stickerCaption } from './Sticker';
 import { TrickArea, type CardOrigin } from './TrickArea';
 import { positionOf, useLayout } from './layout';
 import { useTable } from './useTable';
@@ -22,6 +23,7 @@ export function GameScreen({ session, onExit }: { session: Session; onExit: (mes
     const [myOrigin, setMyOrigin] = useState<CardOrigin | null>(null);
     const [muted, setMutedState] = useState(isMuted);
     const [emotesOpen, setEmotesOpen] = useState(false);
+    const [emoteTab, setEmoteTab] = useState<'stickers' | 'emoji'>('stickers');
     const { room, view, seat } = table;
     const exit = () => onExit();
 
@@ -54,6 +56,11 @@ export function GameScreen({ session, onExit }: { session: Session; onExit: (mes
     const theirTeam = (1 - myTeam) as Team;
     const nameOf = (s: Seat) => room.seats[s].name;
     const myChoice = view.phase === 'choosingTrump' && view.caller === seat;
+
+    const sendReaction = (value: string) => {
+        session.emote(value);
+        setEmotesOpen(false);
+    };
 
     const playCard = (card: Card, element: HTMLElement) => {
         unlockAudio();
@@ -200,12 +207,12 @@ export function GameScreen({ session, onExit }: { session: Session; onExit: (mes
                     {table.emotes[seat] && (
                         <motion.div
                             key={table.emotes[seat]!.id}
-                            className="emote-bubble mine"
+                            className={`emote-bubble mine ${isSticker(table.emotes[seat]!.emote) ? 'sticker-bubble' : ''}`}
                             initial={{ scale: 0.3, opacity: 0 }}
                             animate={{ scale: 1, opacity: 1 }}
                             exit={{ scale: 0.6, opacity: 0 }}
                         >
-                            {table.emotes[seat]!.emote}
+                            <Reaction value={table.emotes[seat]!.emote} />
                         </motion.div>
                     )}
                 </AnimatePresence>
@@ -219,19 +226,32 @@ export function GameScreen({ session, onExit }: { session: Session; onExit: (mes
 
             <div className="emotes">
                 {emotesOpen && (
-                    <div className="emotes-grid">
-                        {EMOTES.map((emote) => (
-                            <button
-                                key={emote}
-                                type="button"
-                                onClick={() => {
-                                    session.emote(emote);
-                                    setEmotesOpen(false);
-                                }}
-                            >
-                                {emote}
+                    <div className="emotes-panel">
+                        <div className="emotes-tabs">
+                            <button type="button" className={emoteTab === 'stickers' ? 'on' : ''} onClick={() => setEmoteTab('stickers')}>
+                                Стикеры
                             </button>
-                        ))}
+                            <button type="button" className={emoteTab === 'emoji' ? 'on' : ''} onClick={() => setEmoteTab('emoji')}>
+                                Эмодзи
+                            </button>
+                        </div>
+                        {emoteTab === 'stickers' ? (
+                            <div className="emotes-grid stickers">
+                                {STICKERS.map((id) => (
+                                    <button key={id} type="button" aria-label={stickerCaption(id)} onClick={() => sendReaction(id)}>
+                                        <Sticker id={id} />
+                                    </button>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="emotes-grid">
+                                {EMOTES.map((emote) => (
+                                    <button key={emote} type="button" onClick={() => sendReaction(emote)}>
+                                        {emote}
+                                    </button>
+                                ))}
+                            </div>
+                        )}
                     </div>
                 )}
                 <button type="button" className="emotes-toggle" aria-label="Эмоции" onClick={() => setEmotesOpen(!emotesOpen)}>

@@ -308,6 +308,8 @@ describe('online tables', () => {
         const { host, guest } = startedTable();
         guest.say({ type: 'emote', emote: '🔥' });
         expect(host.last('emote')).toEqual({ type: 'emote', seat: guest.seat, emote: '🔥' });
+        guest.say({ type: 'emote', emote: 'trump' });
+        expect(host.last('emote')).toEqual({ type: 'emote', seat: guest.seat, emote: 'trump' });
 
         const before = host.messages.length;
         guest.say({ type: 'emote', emote: '<script>' });
