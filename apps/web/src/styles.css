@@ -1003,6 +1003,16 @@ input::placeholder {
     color: rgba(244, 239, 225, 0.35);
 }
 
+.menu-notice {
+    margin: -6px 0 16px;
+    padding: 10px 14px;
+    border-radius: 12px;
+    background: rgba(125, 16, 36, 0.55);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    font-size: 14px;
+    line-height: 1.4;
+}
+
 .menu-join {
     display: flex;
     gap: 8px;

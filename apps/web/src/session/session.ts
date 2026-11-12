@@ -6,7 +6,9 @@ export type SessionEvent =
     | { type: 'update'; view: PlayerView; events: GameEvent[] }
     | { type: 'emote'; seat: Seat; emote: string }
     | { type: 'error'; message: string }
-    | { type: 'connection'; online: boolean };
+    | { type: 'connection'; online: boolean }
+    /** The table is gone for us (it no longer exists, or it is full): there is nothing to return to. */
+    | { type: 'closed'; message: string };
 
 /**
  * Everything the game screen needs from "a table I am sitting at".

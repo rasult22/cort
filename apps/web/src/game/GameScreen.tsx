@@ -1,7 +1,7 @@
 import { cardId, legalCards, SUITS, type Card, type Seat, type Team } from '@cort/engine';
 import { EMOTES } from '@cort/protocol';
 import { AnimatePresence, motion } from 'motion/react';
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Session } from '../session/session';
 import { isMuted, play, setMuted, unlockAudio } from '../sound';
 import { SUIT_NAMES, SuitIcon, isRed } from './Card';
@@ -15,7 +15,7 @@ import { useTable } from './useTable';
 
 const OTHERS = [1, 2, 3] as const;
 
-export function GameScreen({ session, onExit }: { session: Session; onExit: () => void }) {
+export function GameScreen({ session, onExit }: { session: Session; onExit: (message?: string) => void }) {
     const table = useTable(session);
     const layout = useLayout();
     const anchor = useRef<HTMLDivElement>(null);
@@ -23,6 +23,12 @@ export function GameScreen({ session, onExit }: { session: Session; onExit: () =
     const [muted, setMutedState] = useState(isMuted);
     const [emotesOpen, setEmotesOpen] = useState(false);
     const { room, view, seat } = table;
+    const exit = () => onExit();
+
+    // The table no longer exists (for example, the server was restarted): back to the menu, with the reason.
+    useEffect(() => {
+        if (table.closed) onExit(table.closed);
+    }, [table.closed, onExit]);
 
     const playable = useMemo(() => {
         if (!view || view.phase !== 'playing' || view.turn !== seat) return null;
@@ -34,14 +40,14 @@ export function GameScreen({ session, onExit }: { session: Session; onExit: () =
             <div className="game">
                 <Ornament />
                 <div className="center-message">{table.error ?? 'Подключаемся…'}</div>
-                <button type="button" className="icon-button corner-exit" onClick={onExit} aria-label="Выйти">
+                <button type="button" className="icon-button corner-exit" onClick={exit} aria-label="Выйти">
                     ✕
                 </button>
             </div>
         );
     }
     if (!room.started || !view) {
-        return <Lobby room={room} seat={seat} error={table.error} onStart={() => session.start()} onExit={onExit} />;
+        return <Lobby room={room} seat={seat} error={table.error} onStart={() => session.start()} onExit={exit} />;
     }
 
     const myTeam = (seat % 2) as Team;
@@ -119,7 +125,7 @@ export function GameScreen({ session, onExit }: { session: Session; onExit: () =
                 >
                     {muted ? '🔇' : '🔊'}
                 </button>
-                <button type="button" className="icon-button" aria-label="Выйти в меню" onClick={onExit}>
+                <button type="button" className="icon-button" aria-label="Выйти в меню" onClick={exit}>
                     ✕
                 </button>
             </div>
@@ -259,7 +265,7 @@ export function GameScreen({ session, onExit }: { session: Session; onExit: () =
                                     <button type="button" className="button primary" onClick={() => session.rematch()}>
                                         Ещё партию
                                     </button>
-                                    <button type="button" className="button" onClick={onExit}>
+                                    <button type="button" className="button" onClick={exit}>
                                         В меню
                                     </button>
                                 </div>

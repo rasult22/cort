@@ -38,6 +38,8 @@ export interface TableState {
     emotes: Partial<Record<Seat, Emote>>;
     error: string | null;
     online: boolean;
+    /** Set when the table is gone and we should leave; holds the reason. */
+    closed: string | null;
 }
 
 /**
@@ -55,6 +57,7 @@ export function useTable(session: Session): TableState {
     const [emotes, setEmotes] = useState<TableState['emotes']>({});
     const [error, setError] = useState<string | null>(null);
     const [online, setOnline] = useState(true);
+    const [closed, setClosed] = useState<string | null>(null);
 
     useEffect(() => {
         const timers = new Map<string, ReturnType<typeof setTimeout>>();
@@ -139,6 +142,9 @@ export function useTable(session: Session): TableState {
                 case 'connection':
                     setOnline(event.online);
                     break;
+                case 'closed':
+                    setClosed(event.message);
+                    break;
             }
         });
 
@@ -159,6 +165,7 @@ export function useTable(session: Session): TableState {
         emotes,
         error,
         online,
+        closed,
     };
 }
 

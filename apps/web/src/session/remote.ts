@@ -12,6 +12,11 @@ export interface RemoteOptions {
     url?: string;
 }
 
+const CLOSED_MESSAGES = {
+    roomNotFound: 'Этот стол уже закрыт. Создайте новый и отправьте друзьям свежую ссылку.',
+    roomFull: 'За этим столом уже нет свободных мест.',
+};
+
 const defaultUrl = () => `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws`;
 
 /** A table that lives on the server. Reconnects by itself and reclaims its seat. */
@@ -86,9 +91,13 @@ export class RemoteSession extends BaseSession implements Session {
                     this.emit({ type: 'emote', seat: data.seat, emote: data.emote });
                     break;
                 case 'error':
-                    this.emit({ type: 'error', message: data.message });
-                    // Nothing to reconnect to: stop trying.
-                    if (data.code === 'roomNotFound' || data.code === 'roomFull') this.disposed = true;
+                    if (data.code === 'roomNotFound' || data.code === 'roomFull') {
+                        // Nothing to reconnect to: stop trying and say so.
+                        this.dispose();
+                        this.emit({ type: 'closed', message: CLOSED_MESSAGES[data.code] });
+                    } else {
+                        this.emit({ type: 'error', message: data.message });
+                    }
                     break;
             }
         };
