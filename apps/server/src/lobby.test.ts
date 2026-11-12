@@ -1,0 +1,207 @@
+import { legalCards, type PlayerView, type Seat } from '@cort/engine';
+import type { ClientMessage, RoomInfo, ServerMessage } from '@cort/protocol';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { Lobby } from './lobby';
+import type { Connection } from './room';
+
+/** A fake client: records everything the server sends it. */
+class Client implements Connection {
+    messages: ServerMessage[] = [];
+
+    constructor(private lobby: Lobby) {}
+
+    send(message: ServerMessage): void {
+        this.messages.push(structuredClone(message));
+    }
+
+    say(message: ClientMessage): void {
+        this.lobby.receive(this, JSON.stringify(message));
+    }
+
+    last<T extends ServerMessage['type']>(type: T): Extract<ServerMessage, { type: T }> {
+        const found = this.messages.filter((m) => m.type === type).at(-1);
+        if (!found) throw new Error(`No "${type}" message received`);
+        return found as Extract<ServerMessage, { type: T }>;
+    }
+
+    get seat(): Seat {
+        return this.last('joined').seat;
+    }
+
+    get room(): RoomInfo {
+        return this.last('room').room;
+    }
+
+    get view(): PlayerView {
+        return this.last('update').view;
+    }
+
+    get errors(): string[] {
+        return this.messages.flatMap((m) => (m.type === 'error' ? [m.code] : []));
+    }
+}
+
+describe('online tables', () => {
+    let lobby: Lobby;
+    const client = () => new Client(lobby);
+
+    /** Two friends at one table, game started; the other two seats are bots. */
+    function startedTable() {
+        const host = client();
+        const guest = client();
+        host.say({ type: 'create', name: 'Расул' });
+        guest.say({ type: 'join', code: host.room.code, name: 'Алия' });
+        host.say({ type: 'start' });
+        return { host, guest };
+    }
+
+    /** Makes `player` do whatever is legal, if it is their move. */
+    function moveIfDue(player: Client): void {
+        const view = player.view;
+        if (view.phase === 'choosingTrump' && view.caller === player.seat) {
+            player.say({ type: 'action', action: { type: 'chooseTrump', seat: player.seat, suit: 'hearts' } });
+        } else if (view.phase === 'playing' && view.turn === player.seat) {
+            const card = legalCards(view.hand, view.trick)[0];
+            player.say({ type: 'action', action: { type: 'playCard', seat: player.seat, card } });
+        }
+    }
+
+    beforeEach(() => {
+        vi.useFakeTimers();
+        lobby = new Lobby();
+    });
+    afterEach(() => vi.useRealTimers());
+
+    it('creates a table and seats friends who join by its code', () => {
+        const host = client();
+        host.say({ type: 'create', name: 'Расул' });
+        expect(host.room.code).toMatch(/^[A-Z]{4}$/);
+
+        const guest = client();
+        guest.say({ type: 'join', code: host.room.code.toLowerCase(), name: '  Алия  ' });
+
+        // The second player sits opposite the first: friends start as partners.
+        expect([host.seat, guest.seat]).toEqual([0, 2]);
+        expect(host.room.seats.map((s) => s.kind)).toEqual(['human', 'empty', 'human', 'empty']);
+        expect(host.room.seats[guest.seat].name).toBe('Алия');
+        expect(host.room.started).toBe(false);
+    });
+
+    it('reports unknown tables and full tables', () => {
+        const lost = client();
+        lost.say({ type: 'join', code: 'ZZZZ', name: 'Кто-то' });
+        expect(lost.errors).toEqual(['roomNotFound']);
+
+        const host = client();
+        host.say({ type: 'create', name: 'Хозяин' });
+        for (let i = 0; i < 3; i++) client().say({ type: 'join', code: host.room.code, name: `Гость ${i}` });
+        const fifth = client();
+        fifth.say({ type: 'join', code: host.room.code, name: 'Пятый' });
+        expect(fifth.errors).toEqual(['roomFull']);
+    });
+
+    it('lets only the host start, and fills empty seats with bots', () => {
+        const host = client();
+        const guest = client();
+        host.say({ type: 'create', name: 'Расул' });
+        guest.say({ type: 'join', code: host.room.code, name: 'Алия' });
+
+        guest.say({ type: 'start' });
+        expect(guest.errors).toEqual(['notHost']);
+        expect(host.room.started).toBe(false);
+
+        host.say({ type: 'start' });
+        expect(host.room.started).toBe(true);
+        expect(host.room.seats.map((s) => s.kind)).toEqual(['human', 'bot', 'human', 'bot']);
+    });
+
+    it('sends each player their own cards and nobody else’s', () => {
+        const { host, guest } = startedTable();
+        for (const player of [host, guest]) {
+            const update = player.last('update');
+            expect(update.view.seat).toBe(player.seat);
+            expect(update.view.hand).toHaveLength(5);
+            expect(update.view).not.toHaveProperty('hands');
+            expect(update.view).not.toHaveProperty('stock');
+            expect(JSON.stringify(update)).not.toContain('"rng"');
+        }
+        expect(host.view.hand).not.toEqual(guest.view.hand);
+    });
+
+    it('ignores the seat a client claims and plays for the sender', () => {
+        const { host, guest } = startedTable();
+        // Whoever is NOT the caller tries to name trump on the caller's behalf.
+        const caller = host.view.caller;
+        const cheat = host.seat === caller ? guest : host;
+        cheat.say({ type: 'action', action: { type: 'chooseTrump', seat: caller, suit: 'spades' } });
+        expect(cheat.errors).toEqual(['illegalAction']);
+        expect(host.view.trump).toBeNull();
+    });
+
+    it('rejects malformed messages without breaking the table', () => {
+        const { host } = startedTable();
+        lobby.receive(host, 'not json');
+        lobby.receive(host, JSON.stringify({ type: 'action', action: { type: 'playCard', card: { suit: 'stars', rank: '99' } } }));
+        lobby.receive(host, JSON.stringify({ type: 'nonsense' }));
+        expect(host.errors).toEqual(['badMessage', 'badMessage', 'badMessage']);
+        expect(host.view.phase).toBe('choosingTrump');
+    });
+
+    it('plays a whole hand with two people and two bots', () => {
+        const { host, guest } = startedTable();
+        for (let guard = 0; host.view.phase !== 'handOver' && host.view.phase !== 'matchOver'; guard++) {
+            if (guard > 300) throw new Error('Hand did not finish');
+            moveIfDue(host);
+            moveIfDue(guest);
+            vi.runOnlyPendingTimers();
+        }
+        expect(host.view.handWinner).not.toBeNull();
+        expect(guest.view.matchScore).toEqual(host.view.matchScore);
+        expect(host.errors).toEqual([]);
+        expect(guest.errors).toEqual([]);
+    });
+
+    it('lets a bot cover for a player who drops, and gives the seat back on return', () => {
+        const { host, guest } = startedTable();
+        const { seat, token } = guest.last('joined');
+        lobby.disconnect(guest);
+        expect(host.room.seats[seat]).toMatchObject({ kind: 'human', connected: false });
+
+        // The game goes on without them.
+        for (let i = 0; i < 40; i++) {
+            moveIfDue(host);
+            vi.runOnlyPendingTimers();
+        }
+        expect(host.view.phase).not.toBe('choosingTrump');
+
+        const back = client();
+        back.say({ type: 'join', code: host.room.code, name: 'Алия', token });
+        expect(back.seat).toBe(seat);
+        expect(host.room.seats[seat].connected).toBe(true);
+        expect(back.view.seat).toBe(seat);
+        expect(back.view.handNumber).toBe(host.view.handNumber);
+    });
+
+    it('frees the seat of someone who leaves before the start, and forgets empty tables', () => {
+        const host = client();
+        const guest = client();
+        host.say({ type: 'create', name: 'Расул' });
+        guest.say({ type: 'join', code: host.room.code, name: 'Алия' });
+
+        lobby.disconnect(guest);
+        expect(host.room.seats.map((s) => s.kind)).toEqual(['human', 'empty', 'empty', 'empty']);
+
+        lobby.disconnect(host);
+        expect(lobby.roomCount).toBe(0);
+    });
+
+    it('passes emotes around the table, but only known ones', () => {
+        const { host, guest } = startedTable();
+        guest.say({ type: 'emote', emote: '🔥' });
+        expect(host.last('emote')).toEqual({ type: 'emote', seat: guest.seat, emote: '🔥' });
+
+        const before = host.messages.length;
+        guest.say({ type: 'emote', emote: '<script>' });
+        expect(host.messages.length).toBe(before);
+    });
+});

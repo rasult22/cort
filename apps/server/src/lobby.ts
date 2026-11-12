@@ -1,0 +1,93 @@
+import type { RunnerDelays, Seat } from '@cort/engine';
+import type { ClientMessage, ServerMessage } from '@cort/protocol';
+import { randomInt } from 'node:crypto';
+import { Room, RoomError, type Connection } from './room';
+
+/** No look-alike characters, so a code survives being read out loud. */
+const CODE_ALPHABET = 'ABCDEFGHJKLMNPRSTUVWXYZ';
+const CODE_LENGTH = 4;
+/** How long a table with nobody connected is kept, so players can come back. */
+const ABANDONED_TTL_MS = 10 * 60_000;
+
+interface Seated {
+    room: Room;
+    seat: Seat;
+}
+
+/** All tables on this server, and which connection sits where. */
+export class Lobby {
+    private rooms = new Map<string, Room>();
+    private seats = new Map<Connection, Seated>();
+    private expiry = new Map<string, ReturnType<typeof setTimeout>>();
+
+    constructor(private readonly delays?: Partial<RunnerDelays>) {}
+
+    get roomCount(): number {
+        return this.rooms.size;
+    }
+
+    /** Handles one raw message from a client. Never throws. */
+    receive(connection: Connection, raw: string): void {
+        try {
+            const message = JSON.parse(raw) as ClientMessage;
+            if (typeof message?.type !== 'string') throw new RoomError('badMessage', 'Неизвестное сообщение');
+            this.dispatch(connection, message);
+        } catch (error) {
+            const known = error instanceof RoomError;
+            if (!known && !(error instanceof SyntaxError)) console.error(error);
+            const reply: ServerMessage = known
+                ? { type: 'error', code: error.code, message: error.message }
+                : { type: 'error', code: 'badMessage', message: 'Не удалось обработать сообщение' };
+            connection.send(reply);
+        }
+    }
+
+    disconnect(connection: Connection): void {
+        const seated = this.seats.get(connection);
+        if (!seated) return;
+        this.seats.delete(connection);
+        seated.room.leave(seated.seat);
+        if (!seated.room.abandoned) return;
+        if (seated.room.started) {
+            this.expiry.set(seated.room.code, setTimeout(() => this.remove(seated.room), ABANDONED_TTL_MS));
+        } else {
+            this.remove(seated.room);
+        }
+    }
+
+    private dispatch(connection: Connection, message: ClientMessage): void {
+        const seated = this.seats.get(connection);
+
+        if (message.type === 'create' || message.type === 'join') {
+            if (seated) throw new RoomError('badMessage', 'Вы уже за столом');
+            const room = message.type === 'create' ? this.createRoom() : this.rooms.get(String(message.code).toUpperCase());
+            if (!room) throw new RoomError('roomNotFound', 'Стол не найден');
+            const token = message.type === 'join' ? message.token : undefined;
+            const seat = room.join(connection, String(message.name ?? ''), token);
+            this.seats.set(connection, { room, seat });
+            clearTimeout(this.expiry.get(room.code));
+            this.expiry.delete(room.code);
+            return;
+        }
+
+        if (!seated) throw new RoomError('notInRoom', 'Сначала сядьте за стол');
+        seated.room.handle(seated.seat, message);
+    }
+
+    private createRoom(): Room {
+        let code: string;
+        do {
+            code = Array.from({ length: CODE_LENGTH }, () => CODE_ALPHABET[randomInt(CODE_ALPHABET.length)]).join('');
+        } while (this.rooms.has(code));
+        const room = new Room(code, this.delays);
+        this.rooms.set(code, room);
+        return room;
+    }
+
+    private remove(room: Room): void {
+        room.dispose();
+        this.rooms.delete(room.code);
+        clearTimeout(this.expiry.get(room.code));
+        this.expiry.delete(room.code);
+    }
+}
