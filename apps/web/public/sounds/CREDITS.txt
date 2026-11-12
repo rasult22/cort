@@ -1,0 +1,2 @@
+Card sounds: "Casino Audio" by Kenney (www.kenney.nl), Creative Commons Zero (CC0).
+Converted from Ogg to WAV with tools/convert-audio.mjs.

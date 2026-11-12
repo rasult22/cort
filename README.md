@@ -1,102 +1,82 @@
-# Card Game (Whist Variant)
+# Корт
 
-A multiplayer card game implementation using React and Phaser.js.
+Уйгурская карточная игра: двое на двое, 52 карты, по 13 на руки, первая команда с 7 взятками берёт раздачу.
 
-## Game Rules
+Можно играть одному с тремя ботами или с друзьями по ссылке — свободные места занимают боты.
 
-- Played with a standard 52-card deck
-- 4 players (2 teams of 2 players)
-- Each player receives 13 cards
-- Partners sit opposite each other
-- First player declares trump suit and makes the first move
-- Players must follow the suit of the first player
-- If a player doesn't have the required suit, they can play a trump or any card
-- Highest card in the trick wins
-- Goal is to win 7 tricks
+> Правила пока черновые. Что реализовано и какие вопросы открыты — в [docs/RULES.md](docs/RULES.md).
+> План проекта — в [закреплённой задаче](https://github.com/rasult22/cort/issues/9).
 
-## Technical Architecture
+## Запуск
 
-### Frontend Stack
-- React.js for UI components
-- Zustand for game state management.
-- Phaser.js for game rendering and animations
-- TypeScript for type safety and better development experience
-- The game logic must be separated from react and ui. Meaning that it should be generic to any framework. And it should be in different files.
+Нужны Node 20+ и pnpm.
 
-### Project Structure
-```
-src/
-├── components/         # React components
-│   ├── Game/          # Main game component
-│   ├── Lobby/         # Game lobby
-│   └── UI/            # Reusable UI components
-├── game/              # Phaser game implementation
-│   ├── scenes/        # Game scenes
-│   ├── sprites/       # Card and game object sprites
-│   └── config/        # Phaser configuration
-├── store/             # Zustand store
-│   └── types/         # TypeScript types
-└── utils/             # Utility functions
+```sh
+pnpm install
+pnpm dev          # клиент: http://localhost:5173 — игры с ботами уже достаточно
+pnpm dev:server   # сервер для игры с друзьями: ws://localhost:8787
 ```
 
-## Implementation Plan
+Чтобы позвать друзей в той же сети, откройте клиент по адресу компьютера (`http://192.168.x.x:5173`) и отправьте ссылку из лобби.
 
-### Phase 1: Basic Setup
-1. We already have react + phaser project
-2. Set up Phaser.js integration
-3. Create basic project structure
-4. Implement card assets loading system
+Один процесс на всё (для выкладки):
 
-### Phase 2: Core Game Logic
-1. Implement card deck management
-2. Create dealing mechanism
-3. Implement trick-taking logic
-4. Add trump suit selection
-5. Create scoring system
+```sh
+pnpm build          # собирает клиент в apps/web/dist
+pnpm start:server   # отдаёт клиент и принимает игроков на порту PORT (по умолчанию 8787)
+```
 
-### Phase 3: Game UI
-1. Design and implement game board
-2. Create player hands display
-3. Implement card playing animations
-4. Add trick display
-5. Create score display
+## Выкладка
 
-### Phase 4: Multiplayer
-0. Create basic AI players
-1. Set up WebSocket connection [IN THE FUTURE]
-2. Implement player synchronization [IN THE FUTURE]
-3. Add turn management [IN THE FUTURE]
-4. Create team management [IN THE FUTURE]
-5. Implement game state synchronization [IN THE FUTURE]
+Игра выкладывается одним сервисом: сервер сам раздаёт собранный клиент. В репозитории лежат `Dockerfile` и `railway.json`, так что на Railway настраивать нечего.
 
-### Phase 5: Polish
-1. Add sound effects
-2. Implement animations
-3. Add visual feedback
-4. Create game lobby
-5. Add game settings
+Один раз:
 
-## Development Guidelines
+1. В Railway: **New Project → Deploy from GitHub repo** → выбрать этот репозиторий, ветка `main`.
+2. В сервисе: **Settings → Networking → Generate Domain**.
+3. По желанию: **Settings → Deploy → Wait for CI** — тогда выкладка идёт только после зелёных проверок.
 
-1. Use TypeScript for all new code
-2. Follow React best practices and hooks
-3. Implement proper error handling
-4. Write unit tests for core game logic
-5. Use CSS modules for styling
-6. Follow Git flow for version control
+Дальше каждый пуш в `main` выкладывается сам. Порт Railway передаёт через `PORT`, проверка живости — `/health`.
 
-## Getting Started
+Столы хранятся в памяти одного процесса: при выкладке новой версии идущие партии обрываются.
 
-1. Clone the repository
-2. Install dependencies: `npm install`
-3. Start development server: `npm run dev`
-4. Build for production: `npm run build`
+## Проверки
 
-## Dependencies
+```sh
+pnpm test        # правила, боты, сервер
+pnpm typecheck
+```
 
-- React
-- Phaser.js
-- TypeScript
-- Zustand
-- Socket.io-client
-- CSS Modules
+Проверка глазами в настоящем браузере (нужен Edge или Chrome и запущенные `pnpm dev` / `pnpm dev:server`):
+
+```sh
+node tools/screenshot.mjs shots     # раздача с ботами на десктопе и телефоне
+node tools/online-check.mjs shots   # два браузера за одним столом
+```
+
+## Как устроено
+
+```
+packages/engine    правила игры — без интерфейса, сети и случайности извне
+packages/protocol  сообщения между клиентом и сервером
+apps/web           клиент: React, анимации на Motion, звук на WebAudio
+apps/server        сервер: столы, места, переподключение (Node + ws)
+tools              проверка игры в браузере, конвертация звуков
+docs/RULES.md      спецификация правил и открытые вопросы
+```
+
+**Движок** — это чистая функция `apply(state, action) → { state, events }`.
+
+- Состояние — обычный объект: его можно сохранить, переслать и воспроизвести. Тасовка идёт от сида.
+- `viewFor(state, seat)` отрезает всё, что игрок видеть не должен. По сети уходит только это.
+- `events` описывают, что произошло (карта сыграна, взятка взята). По ним клиент рисует анимации и играет звуки.
+- Спорные правила собраны в `Rules` (`packages/engine/src/types.ts`): поменять ответ — значит поменять настройку.
+- `GameRunner` ведёт стол: ходит за ботов и раздаёт следующую раздачу. Его используют и офлайн-игра, и сервер, поэтому ведут они себя одинаково.
+
+**Звук** — записи настоящих карт (набор Kenney, CC0) плюс смоделированная щипковая струна для мелодий; всё в `apps/web/src/sound.ts`.
+
+**Клиент** не знает, с кем говорит. Экран игры работает с интерфейсом `Session`; у него две реализации — `LocalSession` (всё в браузере) и `RemoteSession` (WebSocket).
+
+**Сервер** хранит единственную полную копию состояния. Место игрока определяет сервер, а не сообщение клиента. Если игрок отвалился, за него ходит бот; по возвращении он получает своё место обратно.
+
+Полезные параметры адреса при разработке: `?seed=7` — одна и та же раздача, `?demo` — за вас тоже играет бот.
