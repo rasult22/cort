@@ -308,7 +308,27 @@ button:disabled {
 }
 
 .plate.offline .plate-avatar {
-    filter: grayscale(1) brightness(0.7);
+    background: linear-gradient(150deg, #aab3af, #6f7a76);
+}
+
+.plate.offline .plate-name {
+    color: var(--ink-dim);
+}
+
+.plate-covered {
+    position: absolute;
+    left: -7px;
+    bottom: -5px;
+    display: grid;
+    place-items: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    font-size: 13px;
+    background: var(--felt-3);
+    box-shadow:
+        0 0 0 1px var(--gold-soft),
+        0 1px 4px rgba(0, 0, 0, 0.5);
 }
 
 @keyframes pulse {
@@ -1122,7 +1142,7 @@ input::placeholder {
 
     .plate-name {
         font-size: 12px;
-        max-width: 84px;
+        max-width: 120px;
     }
 
     .felt-medallion,

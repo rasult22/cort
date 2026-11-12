@@ -7,7 +7,8 @@ import { Lobby } from './lobby';
 import type { Connection } from './room';
 
 const PORT = Number(process.env.PORT ?? 8787);
-const HEARTBEAT_MS = 30_000;
+/** How often we check that each player is still there; a silent drop is noticed within two beats. */
+const HEARTBEAT_MS = 10_000;
 /** Largest message a client may send; real ones are well under 200 bytes. */
 const MAX_PAYLOAD = 2048;
 

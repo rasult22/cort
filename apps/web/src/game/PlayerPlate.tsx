@@ -21,6 +21,9 @@ const MAX_FAN = 13;
 
 /** An opponent or partner: avatar, name, and their face-down cards. */
 export function PlayerPlate({ info, position, cards, active, isCaller, trump, partner, emote }: PlayerPlateProps) {
+    // A person who dropped out mid-game: a bot is playing their cards until they return.
+    const covered = info.kind === 'human' && !info.connected;
+    const tag = covered ? 'вышел · играет бот' : partner ? 'напарник' : info.kind === 'bot' ? 'бот' : null;
     return (
         <div className={`plate plate-${position} ${active ? 'active' : ''} ${info.connected ? '' : 'offline'}`}>
             <div className="plate-avatar">
@@ -28,6 +31,11 @@ export function PlayerPlate({ info, position, cards, active, isCaller, trump, pa
                 {isCaller && (
                     <div className={`plate-caller ${trump && isRed(trump) ? 'red' : ''}`} title="Заказывает козырь">
                         {trump ? <SuitIcon suit={trump} /> : '♛'}
+                    </div>
+                )}
+                {covered && (
+                    <div className="plate-covered" title="Игрок вышел, за него играет бот">
+                        🤖
                     </div>
                 )}
                 <AnimatePresence>
@@ -47,8 +55,7 @@ export function PlayerPlate({ info, position, cards, active, isCaller, trump, pa
             </div>
             <div className="plate-name">
                 {info.name}
-                {partner && <span className="plate-tag">напарник</span>}
-                {info.kind === 'bot' && <span className="plate-tag">бот</span>}
+                {tag && <span className="plate-tag">{tag}</span>}
             </div>
             <div className="plate-fan" style={{ ['--n' as string]: Math.min(cards, MAX_FAN) }}>
                 {Array.from({ length: Math.min(cards, MAX_FAN) }, (_, i) => (
