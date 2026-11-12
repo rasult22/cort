@@ -10,6 +10,7 @@ import type { Session } from './session/session';
 import { unlockAudio } from './sound';
 
 const NAME_KEY = 'cort.name';
+const AUTHOR_TELEGRAM = 'https://t.me/rasult22js';
 /** The address the page was opened with. Read once: it describes how we arrived, not where we are now. */
 const arrival = new URLSearchParams(location.search);
 
@@ -189,6 +190,12 @@ export function App() {
                     </button>
                 </form>
                 <p className="menu-note">Двое на двое · 13 карт · первая команда с 7 взятками берёт раздачу</p>
+                <p className="menu-contact">
+                    Идеи и предложения — автору в Telegram:{' '}
+                    <a href={AUTHOR_TELEGRAM} target="_blank" rel="noopener noreferrer">
+                        @rasult22js
+                    </a>
+                </p>
             </div>
         </div>
     );
