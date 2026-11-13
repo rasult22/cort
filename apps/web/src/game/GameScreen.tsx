@@ -1,22 +1,30 @@
+import { momentWeight, type Session } from '@cort/client';
 import { cardId, legalCards, SUITS, type Card, type Seat, type Team } from '@cort/engine';
 import { EMOTES, MEME_COUNT, STICKERS, memeId } from '@cort/protocol';
 import { AnimatePresence, motion } from 'motion/react';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import type { Session } from '@cort/client';
 import { isMuted, play, setMuted, unlockAudio } from '../sound';
 import { SUIT_NAMES, SuitIcon, isRed } from './Card';
 import { Hand } from './Hand';
 import { Lobby } from './Lobby';
+import { MomentBanner } from './MomentBanner';
 import { Ornament } from './Ornament';
-import { PlayerPlate } from './PlayerPlate';
+import { ClockRing, PlayerPlate } from './PlayerPlate';
 import { Meme, Reaction, Sticker, isLarge, stickerCaption } from './Sticker';
 import { TrickArea, type CardOrigin } from './TrickArea';
+import { Watchers } from './Watchers';
 import { positionOf, useLayout } from './layout';
 import { useTable } from './useTable';
 
 const OTHERS = [1, 2, 3] as const;
+const EVERYONE = [0, 1, 2, 3] as const;
 
-export function GameScreen({ session, onExit }: { session: Session; onExit: (message?: string) => void }) {
+interface GameScreenProps {
+    session: Session;
+    onExit: (message?: string) => void;
+}
+
+export function GameScreen({ session, onExit }: GameScreenProps) {
     const table = useTable(session);
     const layout = useLayout();
     const anchor = useRef<HTMLDivElement>(null);
@@ -24,7 +32,7 @@ export function GameScreen({ session, onExit }: { session: Session; onExit: (mes
     const [muted, setMutedState] = useState(isMuted);
     const [emotesOpen, setEmotesOpen] = useState(false);
     const [emoteTab, setEmoteTab] = useState<'memes' | 'stickers' | 'emoji'>('memes');
-    const { room, view, seat } = table;
+    const { room, view, seat, watching } = table;
     const exit = () => onExit();
 
     // The table no longer exists (for example, the server was restarted): back to the menu, with the reason.
@@ -33,9 +41,9 @@ export function GameScreen({ session, onExit }: { session: Session; onExit: (mes
     }, [table.closed, onExit]);
 
     const playable = useMemo(() => {
-        if (!view || view.phase !== 'playing' || view.turn !== seat) return null;
+        if (watching || !view || view.phase !== 'playing' || view.turn !== seat) return null;
         return new Set(legalCards(view.hand, view.trick).map(cardId));
-    }, [view, seat]);
+    }, [view, seat, watching]);
 
     if (!room) {
         return (
@@ -49,13 +57,18 @@ export function GameScreen({ session, onExit }: { session: Session; onExit: (mes
         );
     }
     if (!room.started || !view) {
-        return <Lobby room={room} seat={seat} error={table.error} onStart={() => session.start()} onExit={exit} />;
+        return (
+            <Lobby room={room} seat={seat} watching={watching} error={table.error} onStart={() => session.start()} onSit={(to) => session.sit(to)} onExit={exit} />
+        );
     }
 
     const myTeam = (seat % 2) as Team;
     const theirTeam = (1 - myTeam) as Team;
     const nameOf = (s: Seat) => room.seats[s].name;
-    const myChoice = view.phase === 'choosingTrump' && view.caller === seat;
+    const pairOf = (team: Team) => `${nameOf(team)} и ${nameOf((team + 2) as Seat)}`;
+    const myChoice = !watching && view.phase === 'choosingTrump' && view.caller === seat;
+    const clockOf = (s: Seat) => (table.timer?.seat === s ? table.timer : null);
+    const myClock = watching ? null : clockOf(seat);
 
     const sendReaction = (value: string) => {
         session.emote(value);
@@ -81,19 +94,30 @@ export function GameScreen({ session, onExit }: { session: Session; onExit: (mes
     if (view.phase === 'choosingTrump') {
         status = myChoice ? 'Выберите козырь' : `${nameOf(view.caller)} выбирает козырь`;
     } else if (view.phase === 'playing') {
-        status = view.turn === seat ? 'Ваш ход' : `Ходит ${nameOf(view.turn)}`;
+        status = !watching && view.turn === seat ? 'Ваш ход' : `Ходит ${nameOf(view.turn)}`;
     }
-    const myMove = myChoice || (view.phase === 'playing' && view.turn === seat);
+    const myMove = myChoice || (!watching && view.phase === 'playing' && view.turn === seat);
 
-    const won = (view.matchWinner ?? view.handWinner) === myTeam;
+    const winner = view.matchWinner ?? view.handWinner;
+    const won = winner === myTeam;
     const matchOver = view.phase === 'matchOver';
+    const dry = winner !== null && view.tricksWon[1 - winner] === 0;
+    let resultTitle: string;
+    if (watching) {
+        resultTitle = winner === null ? '' : matchOver ? `Победили ${pairOf(winner)}` : `Раздачу взяли ${pairOf(winner)}`;
+    } else {
+        resultTitle = matchOver ? (won ? 'Победа!' : 'Поражение') : won ? 'Раздача ваша' : 'Раздача за соперниками';
+    }
+
+    // A big moment shakes the table once.
+    const shaking = table.moment && momentWeight(table.moment.moment) === 'big' ? table.moment.id : null;
 
     return (
-        <div className="game" style={{ ['--cw' as string]: `${layout.cardW}px` }}>
+        <div className={`game ${watching ? 'watching' : ''} ${shaking !== null ? 'shake' : ''}`} style={{ ['--cw' as string]: `${layout.cardW}px` }}>
             <Ornament />
 
             <div className="hud hud-left">
-                <div className="score">
+                <div className={`score ${watching ? 'named' : ''}`}>
                     <div className="score-head">
                         <span />
                         <span>взятки</span>
@@ -101,7 +125,7 @@ export function GameScreen({ session, onExit }: { session: Session; onExit: (mes
                     </div>
                     {([myTeam, theirTeam] as const).map((team) => (
                         <div key={team} className={`score-row ${team === myTeam ? 'mine' : ''}`}>
-                            <span className="score-team">{team === myTeam ? 'Мы' : 'Они'}</span>
+                            <span className="score-team">{watching ? pairOf(team) : team === myTeam ? 'Мы' : 'Они'}</span>
                             <span className="score-pips">
                                 {Array.from({ length: 7 }, (_, i) => (
                                     <i key={i} className={i < view.tricksWon[team] ? 'on' : ''} />
@@ -137,7 +161,8 @@ export function GameScreen({ session, onExit }: { session: Session; onExit: (mes
                 </button>
             </div>
 
-            {OTHERS.map((offset) => {
+            {/* A spectator has no hand of their own: all four players are drawn the same way. */}
+            {(watching ? EVERYONE : OTHERS).map((offset) => {
                 const s = ((seat + offset) % 4) as Seat;
                 return (
                     <PlayerPlate
@@ -148,15 +173,20 @@ export function GameScreen({ session, onExit }: { session: Session; onExit: (mes
                         active={view.phase === 'choosingTrump' ? view.caller === s : view.phase === 'playing' && view.turn === s}
                         isCaller={view.caller === s}
                         trump={view.trump}
-                        partner={offset === 2}
+                        partner={!watching && offset === 2}
                         emote={table.emotes[s]}
+                        clock={clockOf(s)}
+                        onSit={watching && room.seats[s].kind === 'bot' ? () => session.sit(s) : undefined}
                     />
                 );
             })}
 
             <div className="table-center" ref={anchor}>
+                {table.moment?.moment.type === 'decider' && <div key={table.moment.id} className="decider-pulse" />}
                 <TrickArea plays={table.tablePlays} mySeat={seat} collectTo={table.collectTo} layout={layout} myOrigin={myOrigin} />
             </div>
+
+            <MomentBanner active={table.moment} room={room} seat={seat} watching={watching} />
 
             <AnimatePresence>
                 {myChoice && (
@@ -203,26 +233,36 @@ export function GameScreen({ session, onExit }: { session: Session; onExit: (mes
             </AnimatePresence>
 
             <div className="me">
-                <AnimatePresence>
-                    {table.emotes[seat] && (
-                        <motion.div
-                            key={table.emotes[seat]!.id}
-                            className={`emote-bubble mine ${isLarge(table.emotes[seat]!.emote) ? 'sticker-bubble' : ''}`}
-                            initial={{ scale: 0.3, opacity: 0 }}
-                            animate={{ scale: 1, opacity: 1 }}
-                            exit={{ scale: 0.6, opacity: 0 }}
-                        >
-                            <Reaction value={table.emotes[seat]!.emote} />
-                        </motion.div>
-                    )}
-                </AnimatePresence>
+                {!watching && (
+                    <AnimatePresence>
+                        {table.emotes[seat] && (
+                            <motion.div
+                                key={table.emotes[seat]!.id}
+                                className={`emote-bubble mine ${isLarge(table.emotes[seat]!.emote) ? 'sticker-bubble' : ''} ${table.emotes[seat]!.sticky ? 'sticky' : ''}`}
+                                initial={{ scale: 0.3, opacity: 0 }}
+                                animate={{ scale: 1, opacity: 1 }}
+                                exit={{ scale: 0.6, opacity: 0 }}
+                            >
+                                <Reaction value={table.emotes[seat]!.emote} />
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+                )}
                 {status && (
                     <div className={`status ${myMove ? 'mine' : ''}`}>
-                        {view.caller === seat && view.trump && <span className="status-crown">♛</span>}
+                        {watching && <span className="status-eye">👁 вы смотрите ·</span>}
+                        {!watching && view.caller === seat && view.trump && <span className="status-crown">♛</span>}
                         {status}
+                        {myClock && (
+                            <span className="status-clock">
+                                <ClockRing clock={myClock} />
+                            </span>
+                        )}
                     </div>
                 )}
             </div>
+
+            <Watchers spectators={room.spectators} emotes={table.spectatorEmotes} me={table.spectatorId} />
 
             <div className="emotes">
                 {emotesOpen && (
@@ -270,35 +310,36 @@ export function GameScreen({ session, onExit }: { session: Session; onExit: (mes
                 </button>
             </div>
 
-            <Hand cards={view.hand} handNumber={view.handNumber} playable={playable} layout={layout} onPlay={playCard} />
+            {!watching && <Hand cards={view.hand} handNumber={view.handNumber} playable={playable} layout={layout} onPlay={playCard} />}
 
             <AnimatePresence>
                 {table.resultVisible && (
                     <motion.div key="result" className="overlay" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
                         <motion.div
-                            className={`result ${won ? 'won' : 'lost'}`}
+                            className={`result ${watching ? 'neutral' : won ? 'won' : 'lost'}`}
                             initial={{ scale: 0.8, y: 20 }}
                             animate={{ scale: 1, y: 0 }}
                             transition={{ type: 'spring', stiffness: 300, damping: 22 }}
                         >
-                            <div className="result-title">
-                                {matchOver ? (won ? 'Победа!' : 'Поражение') : won ? 'Раздача ваша' : 'Раздача за соперниками'}
-                            </div>
+                            {dry && !matchOver && <div className="result-badge">сухая победа</div>}
+                            <div className="result-title">{resultTitle}</div>
                             <div className="result-line">
                                 Взятки <b>{view.tricksWon[myTeam]}</b> : <b>{view.tricksWon[theirTeam]}</b>
                             </div>
                             <div className="result-score">
-                                <span>Мы</span>
+                                <span>{watching ? pairOf(myTeam) : 'Мы'}</span>
                                 <b>{view.matchScore[myTeam]}</b>
                                 <i>:</i>
                                 <b>{view.matchScore[theirTeam]}</b>
-                                <span>Они</span>
+                                <span>{watching ? pairOf(theirTeam) : 'Они'}</span>
                             </div>
                             {matchOver ? (
                                 <div className="result-actions">
-                                    <button type="button" className="button primary" onClick={() => session.rematch()}>
-                                        Ещё партию
-                                    </button>
+                                    {!watching && (
+                                        <button type="button" className="button primary" onClick={() => session.rematch()}>
+                                            Ещё партию
+                                        </button>
+                                    )}
                                     <button type="button" className="button" onClick={exit}>
                                         В меню
                                     </button>

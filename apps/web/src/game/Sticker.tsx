@@ -212,7 +212,7 @@ export function Sticker({ id }: { id: StickerId }) {
                 fontSize="16"
                 fontWeight="800"
                 fill="#fff"
-                stroke="#0b2b22"
+                stroke="#101a2e"
                 strokeWidth="4.500"
                 strokeLinejoin="round"
                 paintOrder="stroke"

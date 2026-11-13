@@ -8,3 +8,7 @@ tools
 # The mobile app is not part of the server image; only its manifest is needed for the lockfile.
 apps/mobile
 !apps/mobile/package.json
+# Local settings, secrets and the development database never go into the image.
+**/.env
+**/.env.*
+**/.data

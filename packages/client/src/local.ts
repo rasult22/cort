@@ -30,6 +30,7 @@ export class LocalSession extends BaseSession implements Session {
             open: false,
             host: MY_SEAT,
             started: true,
+            spectators: [],
             seats: [options.name, ...BOT_NAMES].map((name, seat) => ({
                 seat: seat as Seat,
                 name,
@@ -57,6 +58,10 @@ export class LocalSession extends BaseSession implements Session {
         if (this.dealt) return;
         this.dealt = true;
         this.runner.start(this.seed);
+    }
+
+    sit(): void {
+        // The seats of an offline game are fixed.
     }
 
     chooseTrump(suit: Suit): void {

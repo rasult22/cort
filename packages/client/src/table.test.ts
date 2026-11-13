@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { LocalSession, TRICK_HOLD_MS, TableStore, fanSlot, measureLayout, type Cue, type TableEffects } from './index';
+import { LocalSession, MOMENT_HOLD_MS, TRICK_HOLD_MS, TableStore, fanSlot, measureLayout, type Cue, type TableEffects } from './index';
 
 /** Records every sound and vibration the table asks for. */
 function recorder() {
@@ -59,7 +59,8 @@ describe('TableStore', () => {
             vi.advanceTimersToNextTimer();
         }
         expect(store.getSnapshot().resultVisible).toBe(false);
-        vi.advanceTimersByTime(TRICK_HOLD_MS);
+        // A hand that ends on a key moment is held a little longer.
+        vi.advanceTimersByTime(TRICK_HOLD_MS + MOMENT_HOLD_MS);
         expect(store.getSnapshot().resultVisible).toBe(true);
         vi.advanceTimersByTime(300);
         expect(cues.some((cue) => cue === 'handWin' || cue === 'handLose')).toBe(true);

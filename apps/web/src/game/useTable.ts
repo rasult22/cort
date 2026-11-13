@@ -1,10 +1,10 @@
-import { TableStore, type Session, type TableState } from '@cort/client';
+import { TableStore, type Session, type TableEffects, type TableState } from '@cort/client';
 import { useEffect, useMemo, useSyncExternalStore } from 'react';
-import { haptic, play, playDeal } from '../sound';
+import { haptic, play, playDeal, playMoment } from '../sound';
 
-export type { Emote, TableState } from '@cort/client';
+export type { ActiveMoment, Emote, TableState } from '@cort/client';
 
-const effects = { play, deal: playDeal, haptic };
+const effects: TableEffects = { play, deal: playDeal, haptic, moment: playMoment };
 
 /** What should be on screen right now, for this session. See TableStore. */
 export function useTable(session: Session): TableState {

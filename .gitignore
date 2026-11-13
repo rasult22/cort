@@ -22,3 +22,11 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Local settings and secrets; .env.example shows what goes in them.
+.env
+.env.*
+!.env.example
+
+# The development database (PGlite).
+.data

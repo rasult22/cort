@@ -103,6 +103,14 @@ export function viewFor(state: GameState, seat: Seat): PlayerView {
     return { ...shared, seat, hand: hands[seat], handSizes: hands.map((h) => h.length) };
 }
 
+/**
+ * What someone watching the table may know: everything on the table and the
+ * score, but nobody's cards. The table is drawn the way `seat` sees it.
+ */
+export function viewForSpectator(state: GameState, seat: Seat = 0): PlayerView {
+    return { ...viewFor(state, seat), hand: [] };
+}
+
 function requirePhase(state: GameState, phase: GameState['phase']): void {
     if (state.phase !== phase) {
         throw new RuleError('wrongPhase', `Expected phase "${phase}", but it is "${state.phase}"`);

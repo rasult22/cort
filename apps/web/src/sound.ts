@@ -10,7 +10,7 @@
  * recordings and the synth sound like they are in the same place.
  */
 
-import type { Cue, CueOptions } from '@cort/client';
+import { momentWeight, type Cue, type CueOptions, type Moment } from '@cort/client';
 
 const STORAGE_KEY = 'cort.muted';
 const MASTER_GAIN = 0.9;
@@ -291,6 +291,32 @@ const PHRASES = {
         ['D3', 2.3, 1.2],
         ['A3', 2.33, 0.7],
     ],
+    // Key moments. Short: they play over the cards, not instead of them.
+    // A trump lands on a big card: two quick notes, the second one snapped.
+    strike: [
+        ['D5', 0, 0.9],
+        ['A5', 0.07, 1.2],
+    ],
+    // One trick from the end: the low string, twice, and the lowered second hanging in the air.
+    tension: [
+        ['D3', 0, 1.1],
+        ['D3', 0.24, 0.9],
+        ['Eb4', 0.5, 0.8],
+    ],
+    // A dry win or a comeback, for the side it went to…
+    triumph: [
+        ['D4', 0],
+        ['Fs4', 0.08],
+        ['A4', 0.16],
+        ['D5', 0.24, 1.1],
+        ['A5', 0.4, 1.2],
+    ],
+    // …and for the side it went against.
+    blow: [
+        ['Bb4', 0, 1],
+        ['Eb4', 0.16, 1],
+        ['D3', 0.36, 1.2],
+    ],
 } satisfies Record<string, Phrase>;
 
 export function play(cue: Cue, options: CueOptions = {}): void {
@@ -330,6 +356,33 @@ export function play(cue: Cue, options: CueOptions = {}): void {
     }
 }
 
+/**
+ * A key moment of the hand. `ours` says whose side it favours; null for a
+ * spectator, who hears every moment as good news.
+ */
+export function playMoment(moment: Moment, ours: boolean | null): void {
+    const weight = momentWeight(moment);
+    if (weight === 'small') return;
+    vibrate(weight === 'big' ? [70, 50, 110] : [45]);
+
+    const e = engine;
+    if (muted || !e || e.ctx.state !== 'running') return;
+    switch (moment.type) {
+        case 'trumpedHigh':
+        case 'overtrump':
+            foley(e, 'place', { gain: 1, rate: 0.82 });
+            phrase(e, PHRASES.strike, ours === false ? 0.3 : 0.42);
+            break;
+        case 'lastChance':
+            phrase(e, PHRASES.tension, 0.5);
+            break;
+        case 'sweep':
+        case 'comeback':
+            phrase(e, ours === false ? PHRASES.blow : PHRASES.triumph, 0.5);
+            break;
+    }
+}
+
 /** Cards being dealt: one soft slide per card, timed to the animation. */
 export function playDeal(cards: number): void {
     const e = engine;
@@ -342,9 +395,13 @@ export function playDeal(cards: number): void {
 
 /** A short tap of the phone's vibration motor, where there is one. */
 export function haptic(ms = 12): void {
+    vibrate(ms);
+}
+
+function vibrate(pattern: number | number[]): void {
     if (muted) return;
     try {
-        navigator.vibrate?.(ms);
+        navigator.vibrate?.(pattern);
     } catch {
         // Not supported: nothing to do.
     }

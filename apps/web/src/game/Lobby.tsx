@@ -2,22 +2,30 @@ import type { Seat } from '@cort/engine';
 import type { RoomInfo } from '@cort/protocol';
 import { useState } from 'react';
 import { unlockAudio } from '../sound';
+import { Avatar } from './Avatar';
 import { Ornament } from './Ornament';
 
 interface LobbyProps {
     room: RoomInfo;
     seat: Seat;
+    /** We came to watch and have no seat yet. */
+    watching: boolean;
     error: string | null;
     onStart: () => void;
+    onSit: (seat: Seat) => void;
     onExit: () => void;
 }
 
-/** The waiting room of an online table: who has sat down, and the link to invite others. */
-export function Lobby({ room, seat, error, onStart, onExit }: LobbyProps) {
+/** Where each seat is drawn. Fixed, so the picture does not spin when someone moves: partners face each other. */
+const SPOTS = ['bottom', 'left', 'top', 'right'] as const;
+
+/** The waiting room of an online table: who sits where, and the link to invite others. */
+export function Lobby({ room, seat, watching, error, onStart, onSit, onExit }: LobbyProps) {
     const [copied, setCopied] = useState(false);
     const link = `${location.origin}${location.pathname}?room=${room.code}`;
-    const isHost = room.host === seat;
+    const isHost = !watching && room.host === seat;
     const humans = room.seats.filter((s) => s.kind === 'human').length;
+    const myTeam = seat % 2;
 
     const copy = async () => {
         try {
@@ -43,32 +51,62 @@ export function Lobby({ room, seat, error, onStart, onExit }: LobbyProps) {
                         {copied ? 'Скопировано' : 'Копировать'}
                     </button>
                 </div>
-                <p className="lobby-hint">Отправьте ссылку друзьям. Напарники сидят друг напротив друга.</p>
 
-                <div className="lobby-seats">
-                    {room.seats.map((info) => (
-                        <div key={info.seat} className={`lobby-seat ${info.kind} team${info.seat % 2}`}>
-                            <div className="plate-avatar">
-                                <span>{info.kind === 'empty' ? '?' : info.name.slice(0, 1).toUpperCase()}</span>
+                <div className="seat-map">
+                    <div className="seat-map-table">
+                        <span>напарники сидят напротив</span>
+                    </div>
+                    {room.seats.map((info) => {
+                        const mine = !watching && info.seat === seat;
+                        const team = watching ? `team${info.seat % 2}` : info.seat % 2 === myTeam ? 'ours' : 'theirs';
+                        const note =
+                            info.kind === 'empty'
+                                ? 'сесть сюда'
+                                : !info.connected
+                                  ? 'отошёл'
+                                  : mine
+                                    ? 'это вы'
+                                    : watching
+                                      ? info.seat === room.host
+                                          ? 'хозяин'
+                                          : 'игрок'
+                                      : info.seat % 2 === myTeam
+                                        ? 'напарник'
+                                        : 'соперник';
+                        const content = (
+                            <>
+                                <Avatar name={info.name} avatar={info.avatar} empty={info.kind === 'empty'} />
+                                <span className="seat-spot-name">{info.kind === 'empty' ? 'Свободно' : info.name}</span>
+                                <span className="seat-spot-note">{note}</span>
+                            </>
+                        );
+                        const className = `seat-spot pos-${SPOTS[info.seat]} ${info.kind} ${team} ${mine ? 'mine' : ''}`;
+                        return info.kind === 'empty' ? (
+                            <button key={info.seat} type="button" className={className} aria-label={`Сесть на место ${info.seat + 1}`} onClick={() => onSit(info.seat)}>
+                                {content}
+                            </button>
+                        ) : (
+                            <div key={info.seat} className={className}>
+                                {content}
                             </div>
-                            <div>
-                                <div className="lobby-seat-name">
-                                    {info.kind === 'empty' ? 'Свободно' : info.name}
-                                    {info.seat === seat && ' (вы)'}
-                                </div>
-                                <div className="lobby-seat-note">
-                                    {info.kind === 'empty'
-                                        ? 'сядет бот'
-                                        : !info.connected
-                                          ? 'отошёл'
-                                          : info.seat % 2 === seat % 2
-                                          ? 'ваша команда'
-                                          : 'соперники'}
-                                </div>
-                            </div>
-                        </div>
-                    ))}
+                        );
+                    })}
                 </div>
+                <p className="lobby-hint">
+                    {watching ? 'Вы смотрите. Нажмите на свободное место, чтобы сесть за стол.' : 'Нажмите на свободное место, чтобы пересесть. Пустые места займут боты.'}
+                </p>
+
+                {room.spectators.length > 0 && (
+                    <div className="lobby-watchers">
+                        <span>Смотрят</span>
+                        {room.spectators.map((spectator) => (
+                            <span key={spectator.id} className="lobby-watcher">
+                                <Avatar name={spectator.name} avatar={spectator.avatar} />
+                                {spectator.name}
+                            </span>
+                        ))}
+                    </div>
+                )}
 
                 {error && <div className="form-error">{error}</div>}
 
@@ -84,7 +122,7 @@ export function Lobby({ room, seat, error, onStart, onExit }: LobbyProps) {
                         {humans < 4 ? `Начать — ${4 - humans} ${botsWord(4 - humans)}` : 'Начать игру'}
                     </button>
                 ) : (
-                    <div className="lobby-wait">Ждём, когда {room.seats[room.host].name} начнёт игру…</div>
+                    <div className="lobby-wait">Ждём, когда {room.seats[room.host].name || 'хозяин'} начнёт игру…</div>
                 )}
                 <button type="button" className="button ghost wide" onClick={onExit}>
                     Выйти
