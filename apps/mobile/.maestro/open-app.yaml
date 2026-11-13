@@ -1,0 +1,22 @@
+# Opens the app from the local Metro server inside Expo Go and gets past Expo Go's own screens.
+appId: host.exp.exponent
+env:
+  # hands=1: a one-hand match, so the result stays on screen instead of moving on to the next deal.
+  METRO_URL: exp://127.0.0.1:8081/--/?hands=1
+---
+- stopApp
+- openLink: ${METRO_URL}
+# Expo Go covers the app with a sheet about its developer menu; nothing under it can be tapped.
+- extendedWaitUntil:
+    visible: Continue
+    timeout: 90000
+    optional: true
+- runFlow:
+    when:
+      visible: Continue
+    commands:
+      - tapOn: Continue
+- extendedWaitUntil:
+    visible:
+      id: play-bots
+    timeout: 30000

@@ -5,9 +5,11 @@
   "scripts": {
     "dev": "pnpm --filter @cort/web dev",
     "dev:server": "pnpm --filter @cort/server dev",
+    "dev:mobile": "pnpm --filter @cort/mobile start",
     "build": "pnpm --filter @cort/web build",
     "start:server": "pnpm --filter @cort/server start",
     "test": "vitest run",
+    "test:mobile": "maestro test apps/mobile/.maestro/play-with-bots.yaml",
     "typecheck": "pnpm -r typecheck"
   },
   "devDependencies": {

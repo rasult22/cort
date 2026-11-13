@@ -4,3 +4,7 @@ node_modules
 .git
 .github
 docs
+tools
+# The mobile app is not part of the server image; only its manifest is needed for the lockfile.
+apps/mobile
+!apps/mobile/package.json

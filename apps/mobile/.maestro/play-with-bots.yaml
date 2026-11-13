@@ -1,0 +1,82 @@
+# A whole hand against three bots: name check, trump, playing every card, result.
+# Runs the app inside Expo Go: start Metro first (pnpm dev:mobile).
+# Usage: pnpm test:mobile   (or: maestro test apps/mobile/.maestro/play-with-bots.yaml)
+#
+# Selectors are testIDs: Maestro on Windows misreads Cyrillic in flow files.
+# Taps do not wait for the screen to settle: the active player's ring pulses for ever,
+# so it never does, and waiting for it made every step take seconds.
+appId: host.exp.exponent
+name: Play a hand with bots
+---
+- runFlow: open-app.yaml
+
+# The name is required.
+- tapOn:
+    id: play-bots
+- assertVisible:
+    id: name-error
+
+- tapOn:
+    id: name-input
+# A fresh Android keyboard may first show its own stylus tutorial.
+- runFlow:
+    when:
+      visible: Try out your stylus
+    commands:
+      - tapOn: Cancel
+      - tapOn:
+          id: name-input
+- inputText: Rasul
+# Not hideKeyboard: on Android it presses Back, which leaves Expo Go when no keyboard is up.
+- tapOn:
+    id: menu-title
+- tapOn:
+    id: play-bots
+
+- extendedWaitUntil:
+    visible:
+      id: score
+    timeout: 10000
+- assertVisible:
+    id: plate-top
+
+# Name trump if we are the caller, otherwise play whenever it is our turn, until the hand ends.
+# The match is one hand long (see open-app.yaml), so the result stays up and cannot be missed.
+- repeat:
+    times: 400
+    while:
+      notVisible:
+        id: result-title
+    commands:
+      - runFlow:
+          when:
+            visible:
+              id: trump-hearts
+          commands:
+            - tapOn:
+                id: trump-hearts
+                waitToSettleTimeoutMs: 300
+      - runFlow:
+          when:
+            visible:
+              id: playable-card
+          commands:
+            - tapOn:
+                id: playable-card
+                waitToSettleTimeoutMs: 300
+
+- assertVisible:
+    id: result-title
+- assertVisible:
+    id: rematch
+- takeScreenshot: hand-over
+
+# A rematch deals a fresh hand.
+- tapOn:
+    id: rematch
+- extendedWaitUntil:
+    notVisible:
+      id: result-title
+    timeout: 5000
+- assertVisible:
+    id: score
