@@ -4,9 +4,8 @@ import { GameScreen } from './game/GameScreen';
 import { Ornament } from './game/Ornament';
 import { SuitIcon } from './game/Card';
 import { OpenTables } from './menu/OpenTables';
-import { LocalSession } from './session/local';
 import { RemoteSession } from './session/remote';
-import type { Session } from './session/session';
+import { LocalSession, type Session } from '@cort/client';
 import { unlockAudio } from './sound';
 
 const NAME_KEY = 'cort.name';

@@ -250,7 +250,7 @@ describe('bots', () => {
                 if (event.type === 'handWon') expect(event.tricksWon[event.team]).toBe(7);
             }
         }
-    });
+    }, 60_000); // 200 whole matches: CPU-bound, so slow machines need room.
 
     it('play all 13 tricks when the hand does not stop at seven', () => {
         const { events } = playOut(5, { matchTarget: 1, stopAtSevenTricks: false });

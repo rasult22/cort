@@ -2,7 +2,7 @@ import { cardId, legalCards, SUITS, type Card, type Seat, type Team } from '@cor
 import { EMOTES, MEME_COUNT, STICKERS, memeId } from '@cort/protocol';
 import { AnimatePresence, motion } from 'motion/react';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import type { Session } from '../session/session';
+import type { Session } from '@cort/client';
 import { isMuted, play, setMuted, unlockAudio } from '../sound';
 import { SUIT_NAMES, SuitIcon, isRed } from './Card';
 import { Hand } from './Hand';

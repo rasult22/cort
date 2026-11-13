@@ -41,7 +41,8 @@ for (const [name, viewport] of Object.entries(VIEWPORTS)) {
             await page.waitForTimeout(700);
             await shot('3-trump-picker');
             await suit.click();
-            await page.waitForTimeout(500);
+            await page.locator('.trump-option').first().waitFor({ state: 'detached' });
+            await page.waitForTimeout(100);
             await shot('4-trump-notice');
         } else if (await card.isVisible()) {
             if (trickShots === 1) await shot('5-my-turn');

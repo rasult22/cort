@@ -1,3 +1,4 @@
+import { fanSlot } from '@cort/client';
 import { cardId, sortHand, type Card } from '@cort/engine';
 import { motion } from 'motion/react';
 import { useEffect, useMemo, useRef } from 'react';
@@ -20,11 +21,6 @@ export function Hand({ cards, handNumber, playable, layout, onPlay }: HandProps)
     const { cardW, cardH } = layout;
 
     const count = sorted.length;
-    const available = Math.min(layout.width - 20, 860) - cardW;
-    const spacing = count > 1 ? Math.min(cardW * 0.6, available / (count - 1)) : 0;
-    // Narrow screens get a flatter fan, so the outer cards stay on screen.
-    const tilt = layout.compact ? 1.3 : 2.2;
-    const curve = (layout.compact ? 0.6 : 1) * (cardW / 120);
 
     // Cards we have not drawn before are being dealt: stagger their arrival.
     let fresh = 0;
@@ -37,11 +33,11 @@ export function Hand({ cards, handNumber, playable, layout, onPlay }: HandProps)
         <div className="hand" style={{ height: cardH }}>
             {sorted.map((card, index) => {
                 const key = keys[index];
-                const offset = index - (count - 1) / 2;
+                const slot = fanSlot(index, count, layout);
                 const canPlay = playable?.has(cardId(card)) ?? false;
                 const dimmed = playable !== null && !canPlay;
                 const delay = seen.current.has(key) ? 0 : fresh++ * 0.05;
-                const restY = offset * offset * curve - (canPlay ? cardH * 0.1 : 0);
+                const restY = slot.y - (canPlay ? cardH * 0.1 : 0);
                 return (
                     <motion.button
                         key={key}
@@ -49,7 +45,7 @@ export function Hand({ cards, handNumber, playable, layout, onPlay }: HandProps)
                         className={`hand-card ${canPlay ? 'playable' : ''} ${dimmed ? 'dimmed' : ''}`}
                         style={{ width: cardW, height: cardH, left: `calc(50% - ${cardW / 2}px)`, zIndex: index }}
                         initial={{ x: 0, y: -layout.height * 0.42, rotate: 0, scale: 0.6, opacity: 0 }}
-                        animate={{ x: offset * spacing, y: restY, rotate: offset * tilt, scale: 1, opacity: 1 }}
+                        animate={{ x: slot.x, y: restY, rotate: slot.rotate, scale: 1, opacity: 1 }}
                         whileHover={canPlay ? { y: restY - cardH * 0.12 } : undefined}
                         transition={{ type: 'spring', stiffness: 420, damping: 34, delay }}
                         disabled={!canPlay}

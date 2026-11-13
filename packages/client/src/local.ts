@@ -1,4 +1,4 @@
-import { GameRunner, RuleError, viewFor, type Card, type RunnerDelays, type Seat, type Suit } from '@cort/engine';
+import { GameRunner, RuleError, viewFor, type Card, type RunnerDelays, type Rules, type Seat, type Suit } from '@cort/engine';
 import type { RoomInfo } from '@cort/protocol';
 import { BaseSession, type Session } from './session';
 
@@ -11,13 +11,15 @@ export interface LocalOptions {
     /** Let a bot play our seat too (handy for demos and testing). */
     demo?: boolean;
     delays?: Partial<RunnerDelays>;
+    rules?: Partial<Rules>;
 }
 
-/** A table that lives entirely in the browser: you and three bots. */
+/** A room that lives entirely on this device: you and three bots. */
 export class LocalSession extends BaseSession implements Session {
     private readonly runner: GameRunner;
     private readonly room: RoomInfo;
     private seed: number;
+    private dealt = false;
 
     constructor(options: LocalOptions) {
         super();
@@ -38,13 +40,24 @@ export class LocalSession extends BaseSession implements Session {
         this.runner = new GameRunner({
             bots: [options.demo === true, true, true, true],
             delays: options.delays,
+            rules: options.rules,
             onUpdate: (state, events) => this.emit({ type: 'update', view: viewFor(state, MY_SEAT), events }),
         });
         this.emit({ type: 'room', room: this.room, seat: MY_SEAT });
-        this.runner.start(this.seed);
     }
 
-    start(): void {}
+    /** The first deal waits for the first listener, so a screen sees (and hears) it happen. */
+    override subscribe(listener: Parameters<BaseSession['subscribe']>[0]): () => void {
+        const unsubscribe = super.subscribe(listener);
+        this.start();
+        return unsubscribe;
+    }
+
+    start(): void {
+        if (this.dealt) return;
+        this.dealt = true;
+        this.runner.start(this.seed);
+    }
 
     chooseTrump(suit: Suit): void {
         this.attempt(() => this.runner.act({ type: 'chooseTrump', seat: MY_SEAT, suit }));

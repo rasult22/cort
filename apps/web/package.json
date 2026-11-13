@@ -10,6 +10,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@cort/client": "workspace:*",
     "@cort/engine": "workspace:*",
     "@cort/protocol": "workspace:*",
     "motion": "^12.0.0",

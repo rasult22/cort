@@ -1,0 +1,12 @@
+{
+  "name": "@cort/client",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": { ".": "./src/index.ts" },
+  "scripts": { "typecheck": "tsc --noEmit" },
+  "dependencies": {
+    "@cort/engine": "workspace:*",
+    "@cort/protocol": "workspace:*"
+  }
+}
