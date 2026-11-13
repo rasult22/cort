@@ -3,3 +3,5 @@ packages:
   - apps/*
 allowBuilds:
   esbuild: true
+minimumReleaseAgeExclude:
+  - expo@58.0.25

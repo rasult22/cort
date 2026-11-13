@@ -1,6 +1,6 @@
 import type { Card, Seat, Suit } from '@cort/engine';
 import type { ClientMessage, ServerMessage } from '@cort/protocol';
-import { BaseSession, type Session } from './session';
+import { BaseSession, type Session } from '@cort/client';
 
 const RECONNECT_MS = 1500;
 const TOKEN_PREFIX = 'cort.token.';

@@ -19,3 +19,6 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm test
       - run: pnpm build
+      # Bundles the mobile app's JavaScript for both platforms. No device or native build:
+      # this catches modules that fail to resolve in the monorepo, which typecheck does not.
+      - run: pnpm --filter @cort/mobile exec expo export --platform android --platform ios --output-dir "$RUNNER_TEMP/mobile-bundle"

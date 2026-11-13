@@ -7,11 +7,11 @@ export type SessionEvent =
     | { type: 'emote'; seat: Seat; emote: string }
     | { type: 'error'; message: string }
     | { type: 'connection'; online: boolean }
-    /** The table is gone for us (it no longer exists, or it is full): there is nothing to return to. */
+    /** The room is gone for us (it no longer exists, or it is full): there is nothing to return to. */
     | { type: 'closed'; message: string };
 
 /**
- * Everything the game screen needs from "a table I am sitting at".
+ * Everything a game screen needs from "a room I am sitting in".
  * The offline game and the network game implement the same interface,
  * so the UI does not know or care which one it is talking to.
  */

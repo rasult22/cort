@@ -50,6 +50,8 @@ async function moveIfDue(page) {
     if (await suit.isVisible()) {
         await page.waitForTimeout(600);
         await suit.click();
+        // The picker slides away for a moment after the choice: do not mistake it for a new one.
+        await page.locator('.trump-option').first().waitFor({ state: 'detached' });
         return true;
     }
     if (await card.isVisible()) {
@@ -71,7 +73,7 @@ for (let step = 0; step < 600; step++) {
     if (!shot && moves === 6) {
         shot = true;
         await guest.locator('.emotes-toggle').click();
-        await guest.locator('.emotes button').first().click();
+        await guest.locator('.emotes-grid button').first().click();
         await host.locator('.emote-bubble').waitFor();
         await host.screenshot({ path: join(outDir, 'online-3-host-game.png') });
         await guest.screenshot({ path: join(outDir, 'online-4-guest-game.png') });

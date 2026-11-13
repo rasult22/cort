@@ -10,23 +10,7 @@
  * recordings and the synth sound like they are in the same place.
  */
 
-export type Cue =
-    | 'card' // a card lands on the table
-    | 'trick' // a finished trick is swept away
-    | 'trump'
-    | 'turn'
-    | 'handWin'
-    | 'handLose'
-    | 'matchWin'
-    | 'matchLose'
-    | 'tap'; // interface click
-
-export interface CueOptions {
-    /** Stereo position, -1 (left) … 1 (right). */
-    pan?: number;
-    /** Our own action or our team's success: a touch more present. */
-    mine?: boolean;
-}
+import type { Cue, CueOptions } from '@cort/client';
 
 const STORAGE_KEY = 'cort.muted';
 const MASTER_GAIN = 0.9;
